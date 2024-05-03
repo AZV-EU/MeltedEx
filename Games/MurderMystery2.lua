@@ -123,7 +123,7 @@ function module.Init(category, connections)
 		local playerData = Remotes.GetPlayerData:InvokeServer()
 		for k,v in pairs(game.Players:GetPlayers()) do
 			if v ~= plr and v.Character then
-				v:SetAttribute("Role", playerData[v.Name] or "Innocent")
+				v:SetAttribute("Role", playerData[v.Name].Role or "Innocent")
 				table.insert(targets, v.Character)
 			end
 		end

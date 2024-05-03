@@ -47,11 +47,11 @@ local MX_RUNNING = true
 DEV = "DEV"
 PROD = "PROD"
 
-_G.MX_ENV = DEV
+_G.MX_ENV = PROD
 
 local BaseURLs = {
-	DEV = "http://127.0.0.1/MeltedEx/",
-	PROD = "http://azv.ddns.net/MeltedEx/"
+	DEV = "http://azv.ddns.net/MeltedEx/",
+	PROD = "https://raw.githubusercontent.com/AZV-EU/MeltedEx/main/"
 }
 
 _G.MX_BaseURL = BaseURLs[_G.MX_ENV]
