@@ -587,11 +587,13 @@ function module.Init(category, connections)
 			gunData.Spread = 0
 			gunData.FullReload = true
 			gunData.MaxShots = 1000
+			_G.LocalModuleSet(GunStatsModule, gunName, gunData)
 		end
 		
 		local superWeapons = category:AddCheckbox("SuperWeapons", function(state)
-			for gunName,gunData in pairs(GunStatsModule) do
+			for gunName,gunData in pairs(_G.LocalModuleGet(GunStatsModule)) do
 				gunData.prepTime = state and 0.05 or 0.3
+				_G.LocalModuleSet(GunStatsModule, gunName, gunData)
 			end
 		end)
 		category:EndInline()
@@ -823,7 +825,7 @@ function module.Shutdown()
 	
 	if GLM and CSM then
 		if _G.GLM_Fire_ORIG then
-			GLM.Fire = _G.GLM_Fire_ORIG
+			_G.LocalModuleSet(GLM, "Fire", _G.GLM_Fire_ORIG)
 			_G.GLM_Fire_ORIG = nil
 		end
 		--[[
@@ -833,7 +835,7 @@ function module.Shutdown()
 		end
 		]]
 		if _G.CreateShot_ORIG then
-			CSM.CreateShot = _G.CreateShot_ORIG
+			_G.LocalModuleSet(CSM, "CreateShot", _G.CreateShot_ORIG)
 			_G.CreateShot_ORIG = nil
 		end
 	end
