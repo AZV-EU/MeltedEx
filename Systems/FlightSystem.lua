@@ -101,7 +101,7 @@ function module.SetFling(state)
 	end
 end
 
-local RespawnConnection
+local RespawnConnection, InputControlConnection
 local function SetupFlight()
 	task.spawn(function()
 		repeat task.wait() until plr.Character or not module.Enabled
@@ -121,9 +121,28 @@ local function SetupFlight()
 				targetPos = root.Position
 				
 				local cam
-				
-				local speed, moveShift = module.NormalSpeed, Vector3.new()
+				local speed, moveShift = module.NormalSpeed, Vector3.zero
 				local Flying, multiplier = false, 1
+				
+				InputControlConnection = UserInputService.InputChanged:Connect(function(input, gp)
+					if gp then return end
+					
+					if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+						moveShift += Vector3.new(0, 0, -speed)
+					elseif UserInputService:IsKeyDown(Enum.KeyCode.S) then
+						moveShift += Vector3.new(0, 0, speed)
+					end
+					
+					if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+						moveShift += Vector3.new(-speed, 0, 0)
+					elseif UserInputService:IsKeyDown(Enum.KeyCode.D) then
+						moveShift += Vector3.new(speed, 0, 0)
+					end
+					
+					if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+						moveShift += Vector3.new(0, speed, 0)
+					end
+				end)
 				
 				RunService:BindToRenderStep("MX_FLIGHT", Enum.RenderPriority.Camera.Value - 1, function(dt)
 					cam = game.Workspace.CurrentCamera
@@ -131,25 +150,8 @@ local function SetupFlight()
 					if root ~= nil then
 						root.AssemblyLinearVelocity  = Vector3.zero
 						root.AssemblyAngularVelocity = Vector3.zero
-						moveShift = Vector3.zero
 						
 						speed = UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) and module.BoostSpeed or module.NormalSpeed
-						
-						if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-							moveShift += Vector3.new(0, 0, -speed)
-						elseif UserInputService:IsKeyDown(Enum.KeyCode.S) then
-							moveShift += Vector3.new(0, 0, speed)
-						end
-						
-						if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-							moveShift += Vector3.new(-speed, 0, 0)
-						elseif UserInputService:IsKeyDown(Enum.KeyCode.D) then
-							moveShift += Vector3.new(speed, 0, 0)
-						end
-						
-						if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-							moveShift += Vector3.new(0, speed, 0)
-						end
 						
 						targetPos = (CFrame.new(targetPos, targetPos + cam.CFrame.LookVector) * CFrame.new(moveShift * dt)).Position
 						

@@ -1,4 +1,4 @@
-_G.MX_VERSION = "0.3.1"
+_G.MX_VERSION = "0.3.3"
 
 local REPOSITORY = {
 	[286090429] = "Arsenal.lua",
@@ -204,7 +204,7 @@ do -- Main category
 		end)
 		
 		category:AddSlider("Fly Boost Speed", _G.MX_SETTINGS.FLY.BoostDefault, _G.MX_SETTINGS.FLY.BoostMin, _G.MX_SETTINGS.FLY.BoostMax, function(newValue)
-			_G.MX_FlightSystem.NormalSpeed = newValue
+			_G.MX_FlightSystem.BoostSpeed = newValue
 		end)
 	end category:EndInline()
 

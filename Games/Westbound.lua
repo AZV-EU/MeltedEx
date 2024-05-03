@@ -2,9 +2,6 @@ local module = {
 	On = false
 }
 
-
-local GLM, CSM, GunStatsModule, RagdollModule
-
 local objects = {}
 function module.Init(category, connections)
 	local plr = game.Players.LocalPlayer
@@ -19,25 +16,12 @@ function module.Init(category, connections)
 
 	local gunScripts = ReplicatedStorage:WaitForChild("GunScripts")
 	
-	do -- import all in-game modules
-		_G.UnlockModuleScripts(ReplicatedStorage, PlayerScripts)
-		
-		--[[ -- used for debugging which modules are requiring which
-		for _,ms in pairs(game:GetDescendants()) do
-			if ms:IsA("ModuleScript") and not ms:IsDescendantOf(game.CoreGui) and not ms:IsDescendantOf(ReplicatedStorage) and not ms:IsDescendantOf(PlayerScripts) then
-				ms.Name = "__"
-			end
-		end]]
-		
-		GLM = require(gunScripts:WaitForChild("GunLocalModule"))
-		CSM = require(gunScripts:WaitForChild("CreateShot"))
-		RagdollModule = require(sharedModules:WaitForChild("Ragdoll"))
-		GunStatsModule = require(gunScripts:WaitForChild("GunStats"))
-		
-		_G.LockModuleScripts(ReplicatedStorage, PlayerScripts)
-	end
+	GLM = gunScripts:WaitForChild("GunLocalModule")
+	CSM = gunScripts:WaitForChild("CreateShot")
+	RagdollModule = sharedModules:WaitForChild("Ragdoll")
+	GunStatsModule = gunScripts:WaitForChild("GunStats")
 	
-	do -- curentGunData snapshot for reference
+	do -- currentGunData snapshot for reference
 		--[[
 		{
 			Humanoid = game.Workspace.RBChancelor.Humanoid,
@@ -201,21 +185,22 @@ function module.Init(category, connections)
 	end]]
 	
 	do -- anti-ragdoll
-		if _G.OriginalRagdoll then
+		--[[if _G.OriginalRagdoll then
 			for key,func in pairs(_G.OriginalRagdoll) do
 				RagdollModule[key] = func
 			end
 			_G.OriginalRagdoll = nil
 		end
 		
-		_G.OriginalRagdoll = {}
-		for key,func in pairs(RagdollModule) do
-			_G.OriginalRagdoll[key] = func
-			RagdollModule[key] = function()
-				if _G.MX_ENV == "DEV" then
-					print("Prevented regdoll '" .. tostring(key) .. "' execution.")
-				end
-			end
+		_G.OriginalRagdoll = {}]]
+		for key,func in pairs(_G.LocalModuleGet(RagdollModule)) do
+			--_G.OriginalRagdoll[key] = func
+			
+			_G.LocalModuleSet(RagdollModule, key, function()
+				--if _G.MX_ENV == "DEV" then
+					print("Prevented ragdoll '" .. tostring(key) .. "' execution.")
+				--end
+			end)
 		end
 		
 		--[[
@@ -281,15 +266,15 @@ function module.Init(category, connections)
 		
 		-- TODO: !!! BOW !!!
 		
-		_G.GLM_Fire_ORIG = GLM.Fire
-		GLM.Fire = function(...)
+		_G.GLM_Fire_ORIG = _G.LocalModuleGet(GLM, "Fire")
+		_G.LocalModuleSet(GLM, "Fire", function(...)
 			if not _G.MX_AimbotSystem.Enabled or _G.MX_AimbotSystem.CurrentTarget then
 				_G.GLM_Fire_ORIG(...)
 			end
-		end
+		end)
 		
-		_G.CreateShot_ORIG = CSM.CreateShot
-		CSM.CreateShot = function(shotInfo)
+		_G.CreateShot_ORIG = _G.LocalModuleGet(CSM, "CreateShot")
+		_G.LocalModuleSet(CSM, "CreateShot", function(shotInfo)
 			print("Hijacking shot")
 			print(_G.Discover(shotInfo))
 			if shotInfo.BulletOwner == plr then
@@ -594,7 +579,7 @@ function module.Init(category, connections)
 	end
 	
 	do -- superweapons
-		for gunName,gunData in pairs(GunStatsModule) do
+		for gunName,gunData in pairs(_G.LocalModuleGet(GunStatsModule)) do
 			gunData.AutoFire = true
 			gunData.ReloadSpeed = 0.1
 			gunData.equipTime = 0
