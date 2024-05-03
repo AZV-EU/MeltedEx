@@ -295,7 +295,7 @@ function module.Init(category, connections)
 				end
 			end
 			_G.CreateShot_ORIG(shotInfo)
-		end
+		end)
 	end
 	
 	do -- auto-lasso
