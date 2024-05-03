@@ -25,21 +25,21 @@ local function ResetFlight()
 	if myHuman and myHuman.RootPart ~= nil and myHuman.RootPart.Parent ~= nil then
 		myHuman.PlatformStand = false
 		local root = myHuman.RootPart
-		root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-		root.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+		root.AssemblyLinearVelocity = Vector3.zero
+		root.AssemblyAngularVelocity = Vector3.zero
 		myHuman:ChangeState(Enum.HumanoidStateType.GettingUp)
 	end
 end
 
 local bAngVel, flingResetConn
 function module.SetFling(state)
-	if state and not module.Fling then
+	if not module.Fling and state then
 		if plr and plr.Character then
 			local human = plr.Character:FindFirstChildWhichIsA("Humanoid")
 			if human and human.RootPart and human.RootPart.Parent then
 				for _,v in pairs(plr.Character:GetDescendants()) do
 					if v:IsA("BasePart") then
-						v.CustomPhysicalProperties = PhysicalProperties.new(math.huge, 0.3, 0.5)
+						v.CustomPhysicalProperties = PhysicalProperties.new(100, 0.3, 0.5)
 					end
 				end
 				task.wait(0.1) -- let server register new physical properties
@@ -64,7 +64,7 @@ function module.SetFling(state)
 					while module.Fling do
 						bAngVel.AngularVelocity = Vector3.new(0,99999,0)
 						task.wait(.2)
-						bAngVel.AngularVelocity = Vector3.new(0,0,0)
+						bAngVel.AngularVelocity = Vector3.zero
 						task.wait(.1)
 					end
 				end)
@@ -76,7 +76,7 @@ function module.SetFling(state)
 				module.Fling = true
 			end
 		end
-	elseif not state and module.Fling then
+	elseif module.Fling and not state then
 		module.Fling = false
 		if bAngVel then
 			bAngVel:Destroy()
@@ -90,8 +90,9 @@ function module.SetFling(state)
 				task.wait()
 				for k,v in pairs(plr.Character:GetDescendants()) do
 					if v:IsA("BasePart") then
-						v.AssemblyLinearVelocity  = Vector3.new(0, 0, 0)
-						v.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+						v.AssemblyLinearVelocity  = Vector3.zero
+						v.AssemblyAngularVelocity = Vector3.zero
+						v.Massless = false
 						v.CustomPhysicalProperties = PhysicalProperties.new(0.7, 0.3, 0.5)
 					end
 				end
@@ -188,8 +189,8 @@ end
 
 local function Cleanup()
 	ResetFlight()
-	module.SetFling(false)
 	pcall(ContextActionService.UnbindAction, ContextActionService, "FlightToggle")
+	module.SetFling(false)
 end
 
 function module.SetEnabled(enabled)
