@@ -97,7 +97,8 @@ _G.MX_SETTINGS = {
 	},
 	AIMBOT = {
 		Enabled = true,
-		Checked = false
+		Checked = false,
+		PingCompensation = true
 	}
 }
 

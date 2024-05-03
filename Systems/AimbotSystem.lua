@@ -12,6 +12,10 @@ local Players = _G.SafeGetService("Players")
 local Workspace = _G.SafeGetService("Workspace")
 local RunService = _G.SafeGetService("RunService")
 local UserInputService = _G.SafeGetService("UserInputService")
+local Stats = _G.SafeGetService("Stats")
+local Network = Stats:WaitForChild("Network")
+local ServerStatsItem = Network:WaitForChild("ServerStatsItem")
+local DataPing = ServerStatsItem:WaitForChild("Data Ping")
 
 local plr = Players.LocalPlayer
 local mouse = plr:GetMouse()
@@ -32,9 +36,17 @@ function module.CanUse()
 	return plr.Character and plr.Character:FindFirstChildWhichIsA("Tool")
 end
 
-function module.AimFunction()
-	if module.CurrentTarget then
-		Workspace.CurrentCamera.CFrame = CFrame.new(Workspace.CurrentCamera.CFrame.Position, module.CurrentTarget.CFrame.Position)
+do
+	local ping
+	function module.AimFunction()
+		if module.CurrentTarget then
+			if _G.MX_SETTINGS.AIMBOT.PingCompensation then
+				ping = DataPing:GetValue() * 0.001
+				Workspace.CurrentCamera.CFrame = CFrame.new(Workspace.CurrentCamera.CFrame.Position, module.CurrentTarget.CFrame.Position + (module.CurrentTarget.AssemblyLinearVelocity * ping))
+			else
+				Workspace.CurrentCamera.CFrame = CFrame.new(Workspace.CurrentCamera.CFrame.Position, module.CurrentTarget.CFrame.Position)
+			end
+		end
 	end
 end
 
