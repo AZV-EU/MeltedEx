@@ -1,3 +1,5 @@
+_G.MX_VERSION = "0.3.1"
+
 local REPOSITORY = {
 	[286090429] = "Arsenal.lua",
 	[893973440] = "FleeTheFacility.lua",
@@ -44,10 +46,7 @@ end
 local MX_RUNNING = true
 
 -- environments
-DEV = "DEV"
-PROD = "PROD"
-
-_G.MX_ENV = PROD
+_G.MX_ENV = "PROD"
 
 local BaseURLs = {
 	DEV = "http://azv.ddns.net/MeltedEx/",
@@ -88,6 +87,7 @@ _G.MX_SETTINGS = {
 	FLY = {
 		Enabled = true,
 		Checked = true,
+		FlingEnabled = true,
 		NormalMin = 0,
 		NormalDefault = 60,
 		NormalMax = 1000,
@@ -185,6 +185,8 @@ do -- Main category
 			if input.UserInputType == Enum.UserInputType.Keyboard then
 				if aimbotToggle.Enabled and input.KeyCode == Enum.KeyCode.F7 then
 					aimbotToggle:SetChecked(not aimbotToggle.Checked)
+				elseif _G.MX_SETTINGS.FLY.FlingEnabled and input.KeyCode == Enum.KeyCode.F4 then
+					_G.MX_FlightSystem.SetFling(not _G.MX_FlightSystem.Fling)
 				end
 			end
 		end))

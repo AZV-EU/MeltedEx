@@ -5,7 +5,6 @@ local module = {
 	BoostSpeed = 500
 }
 
-
 local Players = _G.SafeGetService("Players")
 local RunService = _G.SafeGetService("RunService")
 local UserInputService = _G.SafeGetService("UserInputService")
@@ -29,6 +28,75 @@ local function ResetFlight()
 		root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
 		root.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
 		myHuman:ChangeState(Enum.HumanoidStateType.GettingUp)
+	end
+end
+
+local bAngVel, flingResetConn
+function module.SetFling(state)
+	if state and not module.Fling then
+		if plr and plr.Character then
+			local human = plr.Character:FindFirstChildWhichIsA("Humanoid")
+			if human and human.RootPart and human.RootPart.Parent then
+				for _,v in pairs(plr.Character:GetDescendants()) do
+					if v:IsA("BasePart") then
+						v.CustomPhysicalProperties = PhysicalProperties.new(math.huge, 0.3, 0.5)
+					end
+				end
+				task.wait(0.1) -- let server register new physical properties
+				
+				bAngVel = Instance.new("BodyAngularVelocity")
+				bAngVel.Name = "1e02#lkre03EPAS"
+				bAngVel.AngularVelocity = Vector3.new(0, 99999, 0)
+				bAngVel.MaxTorque = Vector3.new(0, math.huge, 0)
+				bAngVel.P = math.huge
+				bAngVel.Parent = human.RootPart
+				
+				for _,v in pairs(plr.Character:GetChildren()) do
+					if v:IsA("BasePart") then
+						v.CanCollide = false
+						v.Massless = true
+						v.AssemblyLinearVelocity = Vector3.zero
+						v.AssemblyAngularVelocity = Vector3.zero
+					end
+				end
+				
+				spawn(function()
+					while module.Fling do
+						bAngVel.AngularVelocity = Vector3.new(0,99999,0)
+						task.wait(.2)
+						bAngVel.AngularVelocity = Vector3.new(0,0,0)
+						task.wait(.1)
+					end
+				end)
+				
+				flingResetConn = human.Died:Once(function()
+					module.SetFling(false)
+					flingResetConn = nil
+				end)
+				module.Fling = true
+			end
+		end
+	elseif not state and module.Fling then
+		module.Fling = false
+		if bAngVel then
+			bAngVel:Destroy()
+		end
+		if flingResetConn then
+			flingResetConn:Disconnect()
+		end
+		if plr and plr.Character then
+			local human = plr.Character:FindFirstChildWhichIsA("Humanoid")
+			if human and human.RootPart and human.RootPart.Parent then
+				task.wait()
+				for k,v in pairs(plr.Character:GetDescendants()) do
+					if v:IsA("BasePart") then
+						v.AssemblyLinearVelocity  = Vector3.new(0, 0, 0)
+						v.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+						v.CustomPhysicalProperties = PhysicalProperties.new(0.7, 0.3, 0.5)
+					end
+				end
+			end
+		end
 	end
 end
 
@@ -87,14 +155,14 @@ local function SetupFlight()
 						root.CFrame = CFrame.new(targetPos, targetPos + cam.CFrame.LookVector)
 						
 						if module.Fling then
-							for k,v in pairs(plr.Character:GetChildren()) do
-								if v:IsA("BasePart") then
+							for k,v in pairs(plr.Character:GetDescendants()) do
+								if v:IsA("BasePart") and v.CanCollide then
 									v.CanCollide = false
-									v.AssemblyLinearVelocity  = Vector3.zero
-									v.AssemblyAngularVelocity = Vector3.zero
+									--v.AssemblyLinearVelocity  = Vector3.zero
+									--v.AssemblyAngularVelocity = Vector3.zero
 								end
 							end
-							root.CFrame = CFrame.new(targetPos, targetPos + cam.CFrame.LookVector)
+							--root.CFrame = CFrame.new(targetPos, targetPos + cam.CFrame.LookVector)
 						end
 					end
 				end)
@@ -110,6 +178,7 @@ local function SetupFlight()
 		local human = plr.Character:FindFirstChildWhichIsA("Humanoid")
 		if human then
 			RespawnConnection = human.Died:Once(function()
+				module.SetFling(false)
 				ResetFlight()
 				RespawnConnection = nil
 			end)
@@ -119,6 +188,7 @@ end
 
 local function Cleanup()
 	ResetFlight()
+	module.SetFling(false)
 	pcall(ContextActionService.UnbindAction, ContextActionService, "FlightToggle")
 end
 
