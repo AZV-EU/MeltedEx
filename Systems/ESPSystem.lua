@@ -112,6 +112,7 @@ do -- Default (neutral) team
 		if h then
 			h.Adornee = module.Teams.Neutral.Folder
 		end
+		module.Teams.Neutral.Highlight = h
 	end
 end
 
@@ -150,6 +151,7 @@ function module.AddTeam(name, color, rule, index)
 		if h then
 			h.Adornee = team.Folder
 		end
+		team.Highlight = h
 	end
 	
 	module.Teams[name] = team
@@ -339,7 +341,13 @@ do
 end
 
 function module.Update()
-	if _G.MX_SETTINGS.ESP.Mode == 1 then
+	if _G.MX_SETTINGS.ESP.Mode == 0 then
+		for _,team in pairs(module.Teams) do
+			if team.Highlight and team.Color then
+				team.Highlight.FillColor = team.Color
+			end
+		end
+	elseif _G.MX_SETTINGS.ESP.Mode == 1 then
 		for _,highlight in pairs(module.HighlightStore:GetChildren()) do
 			if highlight:IsA("Highlight") then
 				highlight:SetAttribute("Dirty", true)

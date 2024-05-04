@@ -23,7 +23,9 @@ function module.Init(category, connections)
 	local RagdollModule = sharedModules:WaitForChild("Ragdoll")
 	local GunStatsModule = gunScripts:WaitForChild("GunStats")
 	
-	BRIDGE = _G.LocalBridge([[local BRIDGE = script:WaitForChild("BRIDGE")
+	BRIDGE = _G.LocalBridge([[local plr = game.Players.LocalPlayer
+local mouse = plr:GetMouse()
+local BRIDGE = script:WaitForChild("BRIDGE")
 local DATABIND = script:WaitForChild("DATABIND")
 local GLM, CSM
 local GLM_Fire_ORIG, CSM_CreateShot_ORIG
