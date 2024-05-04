@@ -123,28 +123,6 @@ local function SetupFlight()
 				local cam
 				local speed, moveShift = module.NormalSpeed, Vector3.zero
 				local Flying, multiplier = false, 1
-				
-				InputControlConnection = UserInputService.InputChanged:Connect(function(input, gp)
-					moveShift = Vector3.zero
-					if gp or input.UserInputType ~= Enum.UserInputType.Keyboard then return end
-					
-					if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-						moveShift += Vector3.new(0, 0, -speed)
-					elseif UserInputService:IsKeyDown(Enum.KeyCode.S) then
-						moveShift += Vector3.new(0, 0, speed)
-					end
-					
-					if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-						moveShift += Vector3.new(-speed, 0, 0)
-					elseif UserInputService:IsKeyDown(Enum.KeyCode.D) then
-						moveShift += Vector3.new(speed, 0, 0)
-					end
-					
-					if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-						moveShift += Vector3.new(0, speed, 0)
-					end
-				end)
-				
 				RunService:BindToRenderStep("MX_FLIGHT", Enum.RenderPriority.Camera.Value - 1, function(dt)
 					cam = game.Workspace.CurrentCamera
 					root = myHuman.RootPart
@@ -153,6 +131,23 @@ local function SetupFlight()
 						root.AssemblyAngularVelocity = Vector3.zero
 						
 						speed = UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) and module.BoostSpeed or module.NormalSpeed
+						
+						moveShift = Vector3.zero
+						if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+							moveShift += Vector3.new(0, 0, -speed)
+						elseif UserInputService:IsKeyDown(Enum.KeyCode.S) then
+							moveShift += Vector3.new(0, 0, speed)
+						end
+						
+						if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+							moveShift += Vector3.new(-speed, 0, 0)
+						elseif UserInputService:IsKeyDown(Enum.KeyCode.D) then
+							moveShift += Vector3.new(speed, 0, 0)
+						end
+						
+						if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+							moveShift += Vector3.new(0, speed, 0)
+						end
 						
 						targetPos = (CFrame.new(targetPos, targetPos + cam.CFrame.LookVector) * CFrame.new(moveShift * dt)).Position
 						

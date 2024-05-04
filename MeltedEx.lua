@@ -1,4 +1,4 @@
-_G.MX_VERSION = "0.3.3b"
+_G.MX_VERSION = "0.3.3c"
 
 local REPOSITORY = {
 	[286090429] = "Arsenal.lua",
