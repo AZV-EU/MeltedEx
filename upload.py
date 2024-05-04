@@ -22,8 +22,6 @@ print(f'Updating v{origVersion} -> v{version}')
 subprocess.run(["git", "add", "."])
 subprocess.run(["git", "status"])
 subprocess.run(["git", "commit", "-m", f"v{origVersion} -> v{version}"])
-subprocess.run(["git", "push"])
-subprocess.run(["pause"])
 
 lines[1] = "_G.MX_ENV = \"DEV\"\n"
 
