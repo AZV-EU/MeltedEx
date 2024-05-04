@@ -1,4 +1,4 @@
-_G.MX_VERSION = "0.6.1b"
+_G.MX_VERSION = "0.6.1c"
 _G.MX_ENV = "PROD"
 
 local REPOSITORY = {
@@ -219,7 +219,7 @@ do -- Main category
 			end
 		end)
 		
-		local jumpSlider = category:AddSlider("Jump Height", 16, _G.MX_SETTINGS.JUMP.Min, _G.MX_SETTINGS.JUMP.Max, function(newValue)
+		local jumpSlider = category:AddSlider("Jump Height", 0, _G.MX_SETTINGS.JUMP.Min, _G.MX_SETTINGS.JUMP.Max, function(newValue)
 			if plr and plr.Character then
 				local human = plr.Character:FindFirstChildWhichIsA("Humanoid")
 				if human then

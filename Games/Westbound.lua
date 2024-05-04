@@ -218,15 +218,15 @@ end]])
 	
 	local inventoryLimit = stats:WaitForChild("InventorySizeLevel"):WaitForChild("CurrentAmount")
 	
-	local mle = stateConfig:WaitForChild("MouseLockEnabled")
-	mle.Value = false
-	table.insert(connections, mle:GetPropertyChangedSignal("Value"):Connect(function()
-		if mle.Value then
-			mle.Value = false
-		end
-	end))
-	
 	do
+		local mle = stateConfig:WaitForChild("MouseLockEnabled")
+		mle.Value = false
+		table.insert(connections, mle:GetPropertyChangedSignal("Value"):Connect(function()
+			if mle.Value then
+				mle.Value = false
+			end
+		end))
+		
 		local mre = mle:WaitForChild("MouseRotateEnabled")
 		mre.Value = false
 		table.insert(connections, mre:GetPropertyChangedSignal("Value"):Connect(function()
@@ -302,7 +302,7 @@ end]])
 		
 		do
 			local targets
-			function module.GetValidTargets()
+			function _G.MX_AimbotSystem.GetValidTargets()
 				targets = animals:GetChildren()
 				for _,v in pairs(game.Players:GetPlayers()) do
 					if v ~= plr and v.Character and v.Character.Parent and
