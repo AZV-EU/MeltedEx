@@ -13,6 +13,7 @@ with open(target, "r") as f:
     lines[1] = "_G.MX_ENV = \"PROD\"\n"
 
 version = Version(f'{origVersion.major}.{origVersion.minor}.{origVersion.micro + 1}')
+lines[0] = f'_G.MX_VERSION = \"{version}\"'
 
 with open(target, "w") as f:
     f.writelines(lines)
@@ -20,7 +21,7 @@ with open(target, "w") as f:
 print(f'Updating v{origVersion} -> v{version}')
 subprocess.run(["git", "status"])
 subprocess.run(["git", "add", "."])
-subprocess.run(["git", "commit", "-m", f"\"v{origVersion} -> v{version}\""])
+subprocess.run(["git", "commit", "-m", f"v{origVersion} -> v{version}"])
 subprocess.run(["git", "push"])
 
 lines[1] = "_G.MX_ENV = \"DEV\"\n"
