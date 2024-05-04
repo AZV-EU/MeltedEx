@@ -111,7 +111,9 @@ local function ResetFlight()
 		local root = myHuman.RootPart
 		root.AssemblyLinearVelocity = Vector3.zero
 		root.AssemblyAngularVelocity = Vector3.zero
-		myHuman:ChangeState(Enum.HumanoidStateType.GettingUp)
+		if not myHuman.Sit then
+			myHuman:ChangeState(Enum.HumanoidStateType.GettingUp)
+		end
 	end
 end
 
