@@ -86,7 +86,7 @@ end]])
 	
 	BRIDGE_OUT.OnInvoke = function(data, ...)
 		if data == 1 then
-			return (not _G.MX_AimbotSystem.Enabled or _G.MX_AimbotSystem.CurrentTarget
+			return not _G.MX_AimbotSystem.Enabled or _G.MX_AimbotSystem.CurrentTarget
 		elseif data == 2 then
 			return _G.MX_AimbotSystem.CurrentTarget
 		elseif data == 3 then
