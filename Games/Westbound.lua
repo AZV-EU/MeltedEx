@@ -2,6 +2,8 @@ local module = {
 	On = false
 }
 
+local BRIDGE
+
 local objects = {}
 function module.Init(category, connections)
 	local plr = game.Players.LocalPlayer
@@ -16,10 +18,85 @@ function module.Init(category, connections)
 
 	local gunScripts = ReplicatedStorage:WaitForChild("GunScripts")
 	
-	GLM = gunScripts:WaitForChild("GunLocalModule")
-	CSM = gunScripts:WaitForChild("CreateShot")
-	RagdollModule = sharedModules:WaitForChild("Ragdoll")
-	GunStatsModule = gunScripts:WaitForChild("GunStats")
+	local GLM = gunScripts:WaitForChild("GunLocalModule")
+	local CSM = gunScripts:WaitForChild("CreateShot")
+	local RagdollModule = sharedModules:WaitForChild("Ragdoll")
+	local GunStatsModule = gunScripts:WaitForChild("GunStats")
+	
+	BRIDGE = _G.LocalBridge([[local BRIDGE = script:WaitForChild("BRIDGE")
+local DATABIND = script:WaitForChild("DATABIND")
+local GLM, CSM
+local GLM_Fire_ORIG, CSM_CreateShot_ORIG
+BRIDGE.OnInvoke = function(command, ...)
+	local args = {...}
+	if command == "RAGDOLLFIX" and args[1] then
+		local rm = require(args[1])
+		for fName, f in pairs(rm) do
+			rm[fName] = function()
+				if args[2] or args[1] then -- TODO: remove debug
+					print("Preventing ragdoll")
+				end
+			end
+		end
+	elseif command == "GLMFIX" and args[1] then
+		if not GLM then GLM = require(args[1]) end
+		if GLM_Fire_ORIG then
+			GLM.Fire = GLM_Fire_ORIG
+		end
+		GLM_Fire_ORIG = GLM.Fire
+		GLM.Fire = function(...)
+			if not DATABIND:Invoke(1) or DATABIND:Invoke(2) then
+				_G.GLM_Fire_ORIG(...)
+			end
+		end
+	elseif command == "CSMFIX" and args[1] then
+		if not CSM then CSM = require(args[1]) end
+		if CSM_CreateShot_ORIG then
+			CSM.CreateShot = CSM_CreateShot_ORIG
+		end
+		CSM_CreateShot_ORIG = CSM.CreateShot
+		CSM.CreateShot = function(shotInfo)
+			print("Hijacking shot")
+			if shotInfo.BulletOwner == plr then
+				local aimbotTarget = DATABIND:Invoke(2)
+				if aimbotTarget then
+					shotInfo.cframe = CFrame.new(shotInfo.cframe.Position, aimbotTarget.Position)
+				else
+					local mouseRay = game.Workspace.CurrentCamera:ScreenPointToRay(mouse.X, mouse.Y)
+					local raycastHit = _G.MX_AimbotSystem.Raycast(mouseRay.Origin, mouseRay.Direction * 1000)
+					if raycastHit then
+						shotInfo.cframe = CFrame.new(shotInfo.cframe.Position, raycastHit.Position)
+					else
+						shotInfo.cframe = CFrame.new(shotInfo.cframe.Position, mouse.Hit.Position)
+					end
+				end
+				if shotInfo.GunType and shotInfo.GunType == "Bow" then
+					shotInfo.Speed = 20
+					shotInfo.DamageModifier = 1
+				end
+			end
+			return CSM_CreateShot_ORIG(shotInfo)
+		end
+	elseif command == "CLEANUP" then
+		if GLM_Fire_ORIG then
+			GLM.Fire = GLM_Fire_ORIG
+		end
+		if CSM_CreateShot_ORIG then
+			CSM.CreateShot = CSM_CreateShot_ORIG
+		end
+	end
+end]])
+	
+	local DATABIND = Instance.new("BindableFunction")
+	DATABIND.Name = "DATABIND"
+	DATABIND.OnInvoke = function(data)
+		if data == 1 then
+			return _G.MX_AimbotSystem.Enabled
+		elseif data == 2 then
+			return _G.MX_AimbotSystem.CurrentTarget
+		end
+	end
+	DATABIND.Parent = BRIDGE.Parent
 	
 	do -- currentGunData snapshot for reference
 		--[[
@@ -157,6 +234,7 @@ function module.Init(category, connections)
 			end
 		end))
 	end
+	
 	settings:WaitForChild("AimLock").Value = false
 	if not states:FindFirstChild("_BackpackDisabled") then
 		local original = states:WaitForChild("BackpackDisabled")
@@ -184,31 +262,7 @@ function module.Init(category, connections)
 		end
 	end]]
 	
-	do -- anti-ragdoll
-		--[[if _G.OriginalRagdoll then
-			for key,func in pairs(_G.OriginalRagdoll) do
-				RagdollModule[key] = func
-			end
-			_G.OriginalRagdoll = nil
-		end
-		
-		_G.OriginalRagdoll = {}]]
-		for key,func in pairs(_G.LocalModuleGet(RagdollModule)) do
-			--_G.OriginalRagdoll[key] = func
-			
-			_G.LocalModuleSet(RagdollModule, key, function()
-				--if _G.MX_ENV == "DEV" then
-					print("Prevented ragdoll '" .. tostring(key) .. "' execution.")
-				--end
-			end)
-		end
-		
-		--[[
-		_G.MethodEmulator:SetMethodOverride("ChangeCharacter", "FireServer", function(self, orig, key, value, ...)
-			if key == "Damage" or key == "Ragdoll" then return end
-			return orig(self, key, value, ...)
-		end)]]
-	end
+	BRIDGE:Invoke("RAGDOLLFIX", RagdollModule) -- anti-ragdoll
 	
 	pcall(function()
 		RunService:UnbindFromRenderStep("CameraOffset")
@@ -266,36 +320,8 @@ function module.Init(category, connections)
 		
 		-- TODO: !!! BOW !!!
 		
-		_G.GLM_Fire_ORIG = _G.LocalModuleGet(GLM, "Fire")
-		_G.LocalModuleSet(GLM, "Fire", function(...)
-			if not _G.MX_AimbotSystem.Enabled or _G.MX_AimbotSystem.CurrentTarget then
-				_G.GLM_Fire_ORIG(...)
-			end
-		end)
-		
-		_G.CreateShot_ORIG = _G.LocalModuleGet(CSM, "CreateShot")
-		_G.LocalModuleSet(CSM, "CreateShot", function(shotInfo)
-			print("Hijacking shot")
-			print(_G.Discover(shotInfo))
-			if shotInfo.BulletOwner == plr then
-				if _G.MX_AimbotSystem.CurrentTarget then
-					shotInfo.cframe = CFrame.new(shotInfo.cframe.Position, _G.MX_AimbotSystem.CurrentTarget.Position)
-				else
-					local mouseRay = game.Workspace.CurrentCamera:ScreenPointToRay(mouse.X, mouse.Y)
-					local raycastHit = _G.MX_AimbotSystem.Raycast(mouseRay.Origin, mouseRay.Direction * 1000)
-					if raycastHit then
-						shotInfo.cframe = CFrame.new(shotInfo.cframe.Position, raycastHit.Position)
-					else
-						shotInfo.cframe = CFrame.new(shotInfo.cframe.Position, mouse.Hit.Position)
-					end
-				end
-				if shotInfo.GunType and shotInfo.GunType == "Bow" then
-					shotInfo.Speed = 20
-					shotInfo.DamageModifier = 1
-				end
-			end
-			_G.CreateShot_ORIG(shotInfo)
-		end)
+		BRIDGE:Invoke("GLMFIX", GLM) -- custom fire function
+		BRIDGE:Invoke("CSMFIX", CSM) -- aimbot-aided shots
 	end
 	
 	do -- auto-lasso
@@ -823,22 +849,21 @@ function module.Shutdown()
 	end
 	hopping = false
 	
-	if GLM and CSM then
+	if BRIDGE then
+		BRIDGE:Invoke("Cleanup")
+		BRIDGE.Parent:Destroy()
+	end
+	
+	--[[if GLM and CSM then
 		if _G.GLM_Fire_ORIG then
 			_G.LocalModuleSet(GLM, "Fire", _G.GLM_Fire_ORIG)
 			_G.GLM_Fire_ORIG = nil
 		end
-		--[[
-		if _G.GLM_CycleZoom_ORIG then
-			gunLocalModule.cycleZoom = _G.GLM_CycleZoom_ORIG
-			_G.GLM_CycleZoom_ORIG = nil
-		end
-		]]
 		if _G.CreateShot_ORIG then
 			_G.LocalModuleSet(CSM, "CreateShot", _G.CreateShot_ORIG)
 			_G.CreateShot_ORIG = nil
 		end
-	end
+	end]]
 end
 
 return module
