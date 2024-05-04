@@ -56,13 +56,13 @@ BRIDGE.OnInvoke = function(command, ...)
 		end
 		CSM_CreateShot_ORIG = CSM.CreateShot
 		CSM.CreateShot = function(shotInfo)
-			if shotInfo.BulletOwner == plr then
+			if shotInfo.BulletOwner == game.Players.LocalPlayer then
 				local aimbotTarget = DATABIND:Invoke(2)
 				if aimbotTarget then
 					shotInfo.cframe = CFrame.new(shotInfo.cframe.Position, aimbotTarget.Position)
 				else
 					local mouseRay = game.Workspace.CurrentCamera:ScreenPointToRay(mouse.X, mouse.Y)
-					local raycastHit = _G.MX_AimbotSystem.Raycast(mouseRay.Origin, mouseRay.Direction * 1000)
+					local raycastHit = DATABIND:Invoke(3, mouseRay.Origin, mouseRay.Direction * 1000)
 					if raycastHit then
 						shotInfo.cframe = CFrame.new(shotInfo.cframe.Position, raycastHit.Position)
 					else
@@ -88,11 +88,13 @@ end]])
 	
 	local DATABIND = Instance.new("BindableFunction")
 	DATABIND.Name = "DATABIND"
-	DATABIND.OnInvoke = function(data)
+	DATABIND.OnInvoke = function(data, ...)
 		if data == 1 then
 			return _G.MX_AimbotSystem.Enabled
 		elseif data == 2 then
 			return _G.MX_AimbotSystem.CurrentTarget
+		elseif data == 3 then
+			return _G.MX_AimbotSystem.Raycast(...)
 		end
 	end
 	DATABIND.Parent = BRIDGE.Parent

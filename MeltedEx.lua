@@ -1,4 +1,4 @@
-_G.MX_VERSION = "0.6.1a"
+_G.MX_VERSION = "0.6.1b"
 _G.MX_ENV = "PROD"
 
 local REPOSITORY = {
@@ -268,8 +268,8 @@ do -- Main category
 		end
 		if plr and plr.Character then
 			task.spawn(SetupCharMods, plr.Character)
-			table.insert(MXConnections, plr.CharacterAdded:Connect(SetupCharMods))
 		end
+		table.insert(MXConnections, plr.CharacterAdded:Connect(SetupCharMods))
 	end category:EndInline()
 	
 	do category:BeginInline()
