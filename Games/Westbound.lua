@@ -2,7 +2,7 @@ local module = {
 	On = false
 }
 
-local BRIDGE
+local BRIDGE, BRIDGE_IN, BRIDGE_OUT
 
 local objects = {}
 function module.Init(category, connections)
@@ -23,22 +23,16 @@ function module.Init(category, connections)
 	local RagdollModule = sharedModules:WaitForChild("Ragdoll")
 	local GunStatsModule = gunScripts:WaitForChild("GunStats")
 	
-	BRIDGE = _G.LocalBridge([[local plr = game.Players.LocalPlayer
+	BRIDGE, BRIDGE_IN, BRIDGE_OUT = _G.LocalBridge([[local plr = game.Players.LocalPlayer
 local mouse = plr:GetMouse()
-local BRIDGE = script:WaitForChild("BRIDGE")
-local DATABIND = script:WaitForChild("DATABIND")
-local GLM, CSM
-local GLM_Fire_ORIG, CSM_CreateShot_ORIG
-BRIDGE.OnInvoke = function(command, ...)
+local DIN, DOUT = script:WaitForChild("DATA_IN"), script:WaitForChild("DATA_OUT")
+local GLM, CSM, GLM_Fire_ORIG, CSM_CreateShot_ORIG
+DIN.OnInvoke = function(command, ...)
 	local args = {...}
 	if command == "RAGDOLLFIX" and args[1] then
 		local rm = require(args[1])
 		for fName, f in pairs(rm) do
-			rm[fName] = function()
-				if args[2] or args[1] then -- TODO: remove debug
-					print("Preventing ragdoll")
-				end
-			end
+			rm[fName] = function() end
 		end
 	elseif command == "GLMFIX" and args[1] then
 		if not GLM then GLM = require(args[1]) end
@@ -47,7 +41,7 @@ BRIDGE.OnInvoke = function(command, ...)
 		end
 		GLM_Fire_ORIG = GLM.Fire
 		GLM.Fire = function(...)
-			if not DATABIND:Invoke(1) or DATABIND:Invoke(2) then
+			if not DOUT:Invoke(1) or DOUT:Invoke(2) then
 				GLM_Fire_ORIG(...)
 			end
 		end
@@ -59,12 +53,12 @@ BRIDGE.OnInvoke = function(command, ...)
 		CSM_CreateShot_ORIG = CSM.CreateShot
 		CSM.CreateShot = function(shotInfo)
 			if shotInfo.BulletOwner == game.Players.LocalPlayer then
-				local aimbotTarget = DATABIND:Invoke(2)
+				local aimbotTarget = DOUT:Invoke(2)
 				if aimbotTarget then
 					shotInfo.cframe = CFrame.new(shotInfo.cframe.Position, aimbotTarget.Position)
 				else
 					local mouseRay = game.Workspace.CurrentCamera:ScreenPointToRay(mouse.X, mouse.Y)
-					local raycastHit = DATABIND:Invoke(3, mouseRay.Origin, mouseRay.Direction * 1000)
+					local raycastHit = DOUT:Invoke(3, mouseRay.Origin, mouseRay.Direction * 1000)
 					if raycastHit then
 						shotInfo.cframe = CFrame.new(shotInfo.cframe.Position, raycastHit.Position)
 					else
@@ -79,18 +73,18 @@ BRIDGE.OnInvoke = function(command, ...)
 			return CSM_CreateShot_ORIG(shotInfo)
 		end
 	elseif command == "CLEANUP" then
-		if GLM_Fire_ORIG then
+		if GLM and GLM_Fire_ORIG then
 			GLM.Fire = GLM_Fire_ORIG
+			GLM_Fire_ORIG = nil
 		end
-		if CSM_CreateShot_ORIG then
+		if CSM and CSM_CreateShot_ORIG then
 			CSM.CreateShot = CSM_CreateShot_ORIG
+			CSM_CreateShot_ORIG = nil
 		end
 	end
 end]])
 	
-	local DATABIND = Instance.new("BindableFunction")
-	DATABIND.Name = "DATABIND"
-	DATABIND.OnInvoke = function(data, ...)
+	BRIDGE_OUT.OnInvoke = function(data, ...)
 		if data == 1 then
 			return _G.MX_AimbotSystem.Enabled
 		elseif data == 2 then
@@ -99,7 +93,6 @@ end]])
 			return _G.MX_AimbotSystem.Raycast(...)
 		end
 	end
-	DATABIND.Parent = BRIDGE.Parent
 	
 	do -- currentGunData snapshot for reference
 		--[[
@@ -265,7 +258,7 @@ end]])
 		end
 	end]]
 	
-	BRIDGE:Invoke("RAGDOLLFIX", RagdollModule) -- anti-ragdoll
+	BRIDGE_IN:Invoke("RAGDOLLFIX", RagdollModule) -- anti-ragdoll
 	
 	pcall(function()
 		RunService:UnbindFromRenderStep("CameraOffset")
@@ -323,8 +316,8 @@ end]])
 		
 		-- TODO: !!! BOW !!!
 		
-		BRIDGE:Invoke("GLMFIX", GLM) -- custom fire function
-		BRIDGE:Invoke("CSMFIX", CSM) -- aimbot-aided shots
+		BRIDGE_IN:Invoke("GLMFIX", GLM) -- custom fire function
+		BRIDGE_IN:Invoke("CSMFIX", CSM) -- aimbot-aided shots
 	end
 	
 	do -- auto-lasso
@@ -852,9 +845,9 @@ function module.Shutdown()
 	end
 	hopping = false
 	
-	if BRIDGE then
-		BRIDGE:Invoke("Cleanup")
-		BRIDGE.Parent:Destroy()
+	if BRIDGE and BRIDGE_IN then
+		BRIDGE_IN:Invoke("CLEANUP")
+		BRIDGE:Destroy()
 	end
 	
 	--[[if GLM and CSM then
