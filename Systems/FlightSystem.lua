@@ -86,7 +86,6 @@ local DiedConnection, RespawnConnection
 
 local Flying = false
 local function ResetFlight()
-	if not Flying then return end
 	Flying = false
 	
 	if DiedConnection then
