@@ -46,7 +46,7 @@ BRIDGE.OnInvoke = function(command, ...)
 		GLM_Fire_ORIG = GLM.Fire
 		GLM.Fire = function(...)
 			if not DATABIND:Invoke(1) or DATABIND:Invoke(2) then
-				_G.GLM_Fire_ORIG(...)
+				GLM_Fire_ORIG(...)
 			end
 		end
 	elseif command == "CSMFIX" and args[1] then
@@ -56,7 +56,6 @@ BRIDGE.OnInvoke = function(command, ...)
 		end
 		CSM_CreateShot_ORIG = CSM.CreateShot
 		CSM.CreateShot = function(shotInfo)
-			print("Hijacking shot")
 			if shotInfo.BulletOwner == plr then
 				local aimbotTarget = DATABIND:Invoke(2)
 				if aimbotTarget then
