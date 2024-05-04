@@ -125,7 +125,8 @@ local function SetupFlight()
 				local Flying, multiplier = false, 1
 				
 				InputControlConnection = UserInputService.InputChanged:Connect(function(input, gp)
-					if gp then return end
+					moveShift = Vector3.zero
+					if gp or input.UserInputType ~= Enum.UserInputType.Keyboard then return end
 					
 					if UserInputService:IsKeyDown(Enum.KeyCode.W) then
 						moveShift += Vector3.new(0, 0, -speed)
