@@ -1,4 +1,4 @@
-_G.MX_VERSION = "0.6.1d"
+_G.MX_VERSION = "0.6.1e"
 _G.MX_ENV = "DEV"
 
 local REPOSITORY = {
@@ -253,12 +253,20 @@ do -- Main category
 				jumpSlider:SetValue(human.UseJumpPower and human.JumpPower or human.JumpHeight)
 			end
 			
+			table.insert(MXConnections, human:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
+				if freezeValues.Checked then
+					human.Walkspeed = walkSpeedSlider.Value
+				else
+					walkSpeedSlider:SetValue(human.WalkSpeed)
+				end
+			end))
+			
 			table.insert(MXConnections, human:GetPropertyChangedSignal("UseJumpPower"):Connect(function()
 				if freezeValues.Checked then
 					if human.UseJumpPower then
 						human.JumpPower = jumpSlider.Value
 					else
-						human.JumpHeight = jumpSlider.Values
+						human.JumpHeight = jumpSlider.Value
 					end
 				else
 					jumpSlider:SetValue(human.UseJumpPower and human.JumpPower or human.JumpHeight)

@@ -12,25 +12,6 @@ local ContextActionService = _G.SafeGetService("ContextActionService")
 
 local plr = Players.LocalPlayer
 
-local Flying = false
-local function ResetFlight()
-	Flying = false
-	pcall(function() RunService:UnbindFromRenderStep("MX_FLIGHT") end)
-	
-	if not plr.Character or not plr.Character.Parent then return end
-	local myChar = plr.Character
-	local myHuman = myChar:FindFirstChildWhichIsA("Humanoid")
-	if not myHuman then return end
-	
-	if myHuman and myHuman.RootPart ~= nil and myHuman.RootPart.Parent ~= nil then
-		myHuman.PlatformStand = false
-		local root = myHuman.RootPart
-		root.AssemblyLinearVelocity = Vector3.zero
-		root.AssemblyAngularVelocity = Vector3.zero
-		myHuman:ChangeState(Enum.HumanoidStateType.GettingUp)
-	end
-end
-
 local bAngVel, flingResetConn
 function module.SetFling(state)
 	if not module.Fling and state then
@@ -101,7 +82,40 @@ function module.SetFling(state)
 	end
 end
 
-local RespawnConnection, InputControlConnection
+local DiedConnection, RespawnConnection
+
+local Flying = false
+local function ResetFlight()
+	if not Flying then return end
+	Flying = false
+	
+	if DiedConnection then
+		pcall(DiedConnection.Disconnect, DiedConnection)
+		DiedConnection = nil
+	end
+	
+	if RespawnConnection then
+		pcall(RespawnConnection.Disconnect, RespawnConnection)
+		RespawnConnection = nil
+	end
+	
+	module.SetFling(false)
+	pcall(RunService.UnbindFromRenderStep, RunService, "MX_FLIGHT")
+	
+	if not plr.Character or not plr.Character.Parent then return end
+	local myChar = plr.Character
+	local myHuman = myChar:FindFirstChildWhichIsA("Humanoid")
+	if not myHuman then return end
+	
+	if myHuman and myHuman.RootPart ~= nil and myHuman.RootPart.Parent ~= nil then
+		myHuman.PlatformStand = false
+		local root = myHuman.RootPart
+		root.AssemblyLinearVelocity = Vector3.zero
+		root.AssemblyAngularVelocity = Vector3.zero
+		myHuman:ChangeState(Enum.HumanoidStateType.GettingUp)
+	end
+end
+
 local function SetupFlight()
 	task.spawn(function()
 		repeat task.wait() until plr.Character or not module.Enabled
@@ -176,12 +190,9 @@ local function SetupFlight()
 		
 		local human = plr.Character:FindFirstChildWhichIsA("Humanoid")
 		if human then
-			RespawnConnection = human.Died:Once(function()
-				module.SetFling(false)
-				ResetFlight()
-				RespawnConnection = nil
-			end)
+			DiedConnection = human.Died:Once(ResetFlight)
 		end
+		RespawnConnection = plr.CharacterAdded:Once(ResetFlight)
 	end)
 end
 

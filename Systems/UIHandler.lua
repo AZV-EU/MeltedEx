@@ -378,6 +378,8 @@ function module.Init()
 				slider:SetValue(((posX - slider.UI.SliderContainer.AbsolutePosition.X) / slider.UI.SliderContainer.AbsoluteSize.X) * slider.Max - slider.Min + slider.Step / 2)
 			end
 			
+			local DefaultValue = slider.Value
+			
 			local sliding, slidingOffset = false, 0
 			slider.UI.SliderContainer.InputBegan:Connect(function(input)
 				if not sliding and
@@ -387,6 +389,8 @@ function module.Init()
 					--slidingOffset = (slider.UI.SliderContainer.SliderFront.AbsolutePosition.X + slider.UI.SliderContainer.SliderFront.AbsoluteSize.X) - input.Position.X
 					--SlideTo(input.Position.X + slidingOffset)
 					SlideTo(input.Position.X)
+				elseif input.UserInputType == Enum.UserInputType.MouseButton3 then
+					Slider:SetValue(DefaultValue)
 				end
 			end)
 			

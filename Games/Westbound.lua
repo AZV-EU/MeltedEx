@@ -41,7 +41,7 @@ DIN.OnInvoke = function(command, ...)
 		end
 		GLM_Fire_ORIG = GLM.Fire
 		GLM.Fire = function(...)
-			if not DOUT:Invoke(1) or DOUT:Invoke(2) then
+			if DOUT:Invoke(1) then
 				GLM_Fire_ORIG(...)
 			end
 		end
@@ -86,7 +86,7 @@ end]])
 	
 	BRIDGE_OUT.OnInvoke = function(data, ...)
 		if data == 1 then
-			return _G.MX_AimbotSystem.Enabled
+			return (not _G.MX_AimbotSystem.Enabled or _G.MX_AimbotSystem.CurrentTarget
 		elseif data == 2 then
 			return _G.MX_AimbotSystem.CurrentTarget
 		elseif data == 3 then
@@ -400,6 +400,11 @@ end]])
 		end]]
 		charLocal.Enabled = false
 		human.WalkSpeed = 30
+		table.insert(connections, human:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
+			if human.WalkSpeed < 30 then
+				human.WalkSpeed = 30
+			end
+		end))
 	end
 	if plr.Character then
 		setupCharacter(plr.Character)
