@@ -26,13 +26,24 @@ function module.Init(category, connections)
 	BRIDGE, BRIDGE_IN, BRIDGE_OUT = _G.LocalBridge([[local plr = game.Players.LocalPlayer
 local mouse = plr:GetMouse()
 local DIN, DOUT = script:WaitForChild("DATA_IN"), script:WaitForChild("DATA_OUT")
-local GLM, CSM, GLM_Fire_ORIG, CSM_CreateShot_ORIG
+local GSM, GLM, CSM, GLM_Fire_ORIG, CSM_CreateShot_ORIG
 DIN.OnInvoke = function(command, ...)
 	local args = {...}
 	if command == "RAGDOLLFIX" and args[1] then
 		local rm = require(args[1])
 		for fName, f in pairs(rm) do
 			rm[fName] = function() end
+		end
+	elseif command == "FIXWEAPONS" and args[1] then
+		if not GSM then GSM = require(args[1]) end
+		for gunName,gunData in pairs(GSM) do
+			gunData.AutoFire = true
+			gunData.ReloadSpeed = 0.1
+			gunData.equipTime = 0
+			gunData.EquipDelay = 0
+			gunData.Spread = 0
+			gunData.FullReload = true
+			gunData.MaxShots = 1000
 		end
 	elseif command == "GLMFIX" and args[1] then
 		if not GLM then GLM = require(args[1]) end
@@ -612,28 +623,18 @@ end]])
 	end
 	
 	do -- superweapons
-		for gunName,gunData in pairs(_G.LocalModuleGet(GunStatsModule)) do
-			gunData.AutoFire = true
-			gunData.ReloadSpeed = 0.1
-			gunData.equipTime = 0
-			gunData.EquipDelay = 0
-			gunData.Spread = 0
-			gunData.FullReload = true
-			gunData.MaxShots = 1000
-			_G.LocalModuleSet(GunStatsModule, gunName, gunData)
-		end
-		
-		local superWeapons = category:AddCheckbox("Super Weapons", function(state)
+		BRIDGE_IN:Invoke("FIXWEAPONS", GunStatsModule)
+		--[[local superWeapons = category:AddCheckbox("Super Weapons", function(state)
 			for gunName,gunData in pairs(_G.LocalModuleGet(GunStatsModule)) do
 				gunData.prepTime = state and 0.05 or 0.3
 				_G.LocalModuleSet(GunStatsModule, gunName, gunData)
 			end
-		end)
-		category:EndInline()
+		end)]]
+		--category:EndInline()
 	end
 	
 	do -- autosell
-		category:BeginInline()
+		--category:BeginInline()
 		local autoSell
 		autoSell = category:AddCheckbox("Auto-sell", function(state)
 			if state then
