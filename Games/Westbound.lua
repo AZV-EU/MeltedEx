@@ -210,6 +210,7 @@ end]])
 	local lassod = states:WaitForChild("Lassod")
 	local lassoTarget = states:WaitForChild("LassoTarget")
 	local hogtied = states:WaitForChild("Hogtied")
+	local currentHorse = stateConfig:WaitForChild("Horse")
 	
 	local inventoryLimit = stats:WaitForChild("InventorySizeLevel"):WaitForChild("CurrentAmount")
 	
@@ -264,6 +265,11 @@ end]])
 		RunService:UnbindFromRenderStep("CameraOffset")
 	end)
 	
+	_G.MX_ESPSystem.Teams["Allies"].Rule = function(target)
+		local player = game.Players:GetPlayerFromCharacter(target)
+		return player and player.Team and (player.Team.Name == "Civilians" or (plr.Team.Name == "Cowboys" and plr.Team == player.Team))
+	end
+	
 	_G.MX_ESPSystem.Teams["Enemies"].Rule = function(target)
 		local player = game.Players:GetPlayerFromCharacter(target)
 		return player and player.Team and player.Team.Name == "Outlaws"
@@ -271,13 +277,8 @@ end]])
 	
 	_G.MX_ESPSystem.AddTeam("Cowboys", _G.COLORS.YELLOW, function(target)
 		local player = game.Players:GetPlayerFromCharacter(target)
-		return player and player.Team and player.Team.Name == "Cowboys"
+		return player and player.Team and plr.Team.Name ~= "Cowboys" and player.Team.Name == "Cowboys"
 	end)
-	
-	_G.MX_ESPSystem.Teams["Neutral"].Rule = function(target)
-		local player = game.Players:GetPlayerFromCharacter(target)
-		return player and player.Team and player.Team.Name == "Civilians"
-	end
 	
 	do -- aimbot
 		_G.MX_AimbotSystem.GetFilterDescendantsInstances = function()
@@ -322,8 +323,9 @@ end]])
 	
 	do -- auto-lasso
 		table.insert(connections, lassoTarget:GetPropertyChangedSignal("Value"):Connect(function()
-			local target = lassoTarget.Value
+			local target
 			while task.wait(.3) and target do
+				target = lassoTarget.Value
 				if target:FindFirstChild("States") and target.States:FindFirstChild("Hogtied") then
 					if not target.States.Hogtied.Value then
 						GeneralEvents.LassoEvents:FireServer("Hogtie", target)
@@ -331,7 +333,6 @@ end]])
 						break
 					end
 				end
-				target = lassoTarget.Value
 			end
 		end))
 	end
@@ -344,13 +345,15 @@ end]])
 			
 			local equipped = false
 			local function OnEquipped()
+				if not plr.Character then return end
 				equipped = true
-				while task.wait() and equipped and module.On do
-					if plr.Character and plr.Character.PrimaryPart then
+				local human = plr.Character:FindFirstChildWhichIsA("Humanoid")
+				while task.wait() and equipped and module.On and human and human.RootPart do
+					if not human.Sit then
 						if _G.MX_AimbotSystem.CurrentTarget then
-							plr.Character.PrimaryPart.CFrame = CFrame.new(plr.Character.PrimaryPart.Position, Vector3.new(_G.MX_AimbotSystem.CurrentTarget.Position.X, plr.Character.PrimaryPart.Position.Y, _G.MX_AimbotSystem.CurrentTarget.Position.Z))
+							human.RootPart.CFrame = CFrame.new(human.RootPart.Position, Vector3.new(_G.MX_AimbotSystem.CurrentTarget.Position.X, human.RootPart.Position.Y, _G.MX_AimbotSystem.CurrentTarget.Position.Z))
 						else
-							plr.Character.PrimaryPart.CFrame = CFrame.new(plr.Character.PrimaryPart.Position, Vector3.new(mouse.Hit.Position.X, plr.Character.PrimaryPart.Position.Y, mouse.Hit.Position.Z))
+							human.RootPart.CFrame = CFrame.new(human.RootPartt.Position, Vector3.new(mouse.Hit.Position.X, human.RootPart.Position.Y, mouse.Hit.Position.Z))
 						end
 					end
 				end
@@ -617,7 +620,7 @@ end]])
 			_G.LocalModuleSet(GunStatsModule, gunName, gunData)
 		end
 		
-		local superWeapons = category:AddCheckbox("SuperWeapons", function(state)
+		local superWeapons = category:AddCheckbox("Super Weapons", function(state)
 			for gunName,gunData in pairs(_G.LocalModuleGet(GunStatsModule)) do
 				gunData.prepTime = state and 0.05 or 0.3
 				_G.LocalModuleSet(GunStatsModule, gunName, gunData)
@@ -763,9 +766,8 @@ end]])
 		end
 		category:EndInline()
 		
-		do -- autohopping
-			local category = _G.MX_UIHandler:AddCategory("Auto-farm")
-			
+		category:BeginInline()
+		do -- auto-sell
 			local autoSell
 			autoSell = category:AddCheckbox("Auto-sell", function(state)
 				if state then
@@ -781,7 +783,8 @@ end]])
 					end)
 				end
 			end)
-			autoSell:SetChecked(true)
+			--autoSell:SetChecked(true)
+			category:EndInline()
 			
 			--local hopLocation = category:AddDropdown("Location", {"Fort Arthur", "Grayridge Bank"}, 1)
 			local locations = {
