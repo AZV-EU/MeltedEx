@@ -1,4 +1,4 @@
-_G.MX_VERSION = "0.6.1j"
+_G.MX_VERSION = "0.6.1k"
 _G.MX_ENV = "DEV"
 
 local REPOSITORY = {
@@ -149,7 +149,9 @@ end
 
 do -- initial setup
 	if _G.MX_SETTINGS.SETUP.SetCameraMaxZoomDistance then
-		plr.CameraMaxZoomDistance = 1000
+		table.insert(MXConnections, plr.CharacterAdded:Once(function()
+			plr.CameraMaxZoomDistance = 1000
+		end))
 	end
 	local VUService = _G.SafeGetService("VirtualUser")
 	table.insert(MXConnections, plr.Idled:Connect(function()

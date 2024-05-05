@@ -323,9 +323,8 @@ end]])
 	
 	do -- auto-lasso
 		table.insert(connections, lassoTarget:GetPropertyChangedSignal("Value"):Connect(function()
-			local target
-			while task.wait(.3) and target do
-				target = lassoTarget.Value
+			local target = lassoTarget.Value
+			while target and module.On do
 				if target:FindFirstChild("States") and target.States:FindFirstChild("Hogtied") then
 					if not target.States.Hogtied.Value then
 						GeneralEvents.LassoEvents:FireServer("Hogtie", target)
@@ -333,6 +332,8 @@ end]])
 						break
 					end
 				end
+				task.wait(.3)
+				target = lassoTarget.Value
 			end
 		end))
 	end
@@ -409,6 +410,7 @@ end]])
 				human.WalkSpeed = 30
 			end
 		end))
+		plr.CameraMaxZoomDistance = 1000
 	end
 	if plr.Character then
 		setupCharacter(plr.Character)
