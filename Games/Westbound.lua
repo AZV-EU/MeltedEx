@@ -270,6 +270,7 @@ end]])
 		end
 	end]]
 	
+	BRIDGE_IN:Invoke("FIXWEAPONS", GunStatsModule) -- better weapons patch
 	BRIDGE_IN:Invoke("RAGDOLLFIX", RagdollModule) -- anti-ragdoll
 	
 	pcall(function()
@@ -330,23 +331,6 @@ end]])
 		
 		BRIDGE_IN:Invoke("GLMFIX", GLM) -- custom fire function
 		BRIDGE_IN:Invoke("CSMFIX", CSM) -- aimbot-aided shots
-	end
-	
-	do -- auto-lasso
-		table.insert(connections, lassoTarget:GetPropertyChangedSignal("Value"):Connect(function()
-			local target = lassoTarget.Value
-			while target and module.On do
-				if target:FindFirstChild("States") and target.States:FindFirstChild("Hogtied") then
-					if not target.States.Hogtied.Value then
-						GeneralEvents.LassoEvents:FireServer("Hogtie", target)
-					else
-						break
-					end
-				end
-				task.wait(.3)
-				target = lassoTarget.Value
-			end
-		end))
 	end
 	
 	local hijackedTools = {}
@@ -600,9 +584,8 @@ end]])
 	end
 	
 	do -- auto-free
-		local freeYourselfConn
-		
 		category:BeginInline()
+		local freeYourselfConn
 		local autoFree = category:AddCheckbox("Auto-free", function(state)
 			if state then
 				GeneralEvents.LassoEvents:FireServer("BreakFree")
@@ -616,21 +599,33 @@ end]])
 				end)
 				table.insert(connections, freeYourselfConn)
 			else
-				if freeYourselfConn then freeYourselfConn:Disconnect() end
+				if freeYourselfConn then
+					freeYourselfConn:Disconnect()
+					freeYourselfConn = nil
+				end
 			end
 		end)
 		--autoFree:SetChecked(true)
 	end
 	
-	do -- superweapons
-		BRIDGE_IN:Invoke("FIXWEAPONS", GunStatsModule)
-		--[[local superWeapons = category:AddCheckbox("Super Weapons", function(state)
-			for gunName,gunData in pairs(_G.LocalModuleGet(GunStatsModule)) do
-				gunData.prepTime = state and 0.05 or 0.3
-				_G.LocalModuleSet(GunStatsModule, gunName, gunData)
+	do -- auto-lasso
+		local autoLasso = category:AddCheckbox("Auto-lasso")
+		table.insert(connections, lassoTarget:GetPropertyChangedSignal("Value"):Connect(function()
+			local target = lassoTarget.Value
+			while target and module.On do
+				if autoLasso.Checked and target:FindFirstChild("States") and target.States:FindFirstChild("Hogtied") then
+					if not target.States.Hogtied.Value then
+						GeneralEvents.LassoEvents:FireServer("Hogtie", target)
+					else
+						break
+					end
+				end
+				task.wait(.3)
+				target = lassoTarget.Value
 			end
-		end)]]
-		--category:EndInline()
+		end))
+		--autoLasso:SetChecked(true)
+		category:EndInline()
 	end
 	
 	do -- autosell
