@@ -1,4 +1,4 @@
-_G.MX_VERSION = "0.6.1i"
+_G.MX_VERSION = "0.6.1j"
 _G.MX_ENV = "DEV"
 
 local REPOSITORY = {

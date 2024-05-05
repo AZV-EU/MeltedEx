@@ -347,13 +347,14 @@ end]])
 			local function OnEquipped()
 				if not plr.Character then return end
 				equipped = true
-				local human = plr.Character:FindFirstChildWhichIsA("Humanoid")
-				while task.wait() and equipped and module.On and human and human.RootPart do
+				local chr = plr.Character
+				local human = chr:FindFirstChildWhichIsA("Humanoid")
+				while task.wait() and equipped and module.On and chr.Parent and human and human.RootPart do
 					if not human.Sit then
 						if _G.MX_AimbotSystem.CurrentTarget then
 							human.RootPart.CFrame = CFrame.new(human.RootPart.Position, Vector3.new(_G.MX_AimbotSystem.CurrentTarget.Position.X, human.RootPart.Position.Y, _G.MX_AimbotSystem.CurrentTarget.Position.Z))
 						else
-							human.RootPart.CFrame = CFrame.new(human.RootPartt.Position, Vector3.new(mouse.Hit.Position.X, human.RootPart.Position.Y, mouse.Hit.Position.Z))
+							human.RootPart.CFrame = CFrame.new(human.RootPart.Position, Vector3.new(mouse.Hit.Position.X, human.RootPart.Position.Y, mouse.Hit.Position.Z))
 						end
 					end
 				end
@@ -629,6 +630,27 @@ end]])
 		category:EndInline()
 	end
 	
+	do -- autosell
+		category:BeginInline()
+		local autoSell
+		autoSell = category:AddCheckbox("Auto-sell", function(state)
+			if state then
+				task.spawn(function()
+					while task.wait(.25) and autoSell.Checked and module.On do
+						for _,store in pairs(shops:GetChildren()) do
+							if store:IsA("Model") and store.PrimaryPart and plr:DistanceFromCharacter(store.PrimaryPart.Position) <= 15 then
+								GeneralEvents.Inventory:InvokeServer("Sell")
+								break
+							end
+						end
+					end
+				end)
+			end
+		end)
+		--autoSell:SetChecked(true)
+		category:EndInline()
+	end
+	
 	do -- misc
 		local Safes = {}
 		for k,v in pairs(game.Workspace:GetChildren()) do
@@ -766,26 +788,7 @@ end]])
 		end
 		category:EndInline()
 		
-		category:BeginInline()
 		do -- auto-sell
-			local autoSell
-			autoSell = category:AddCheckbox("Auto-sell", function(state)
-				if state then
-					task.spawn(function()
-						while task.wait(.25) and autoSell.Checked and module.On do
-							for _,store in pairs(shops:GetChildren()) do
-								if store:IsA("Model") and store.PrimaryPart and plr:DistanceFromCharacter(store.PrimaryPart.Position) <= 15 then
-									GeneralEvents.Inventory:InvokeServer("Sell")
-									break
-								end
-							end
-						end
-					end)
-				end
-			end)
-			--autoSell:SetChecked(true)
-			category:EndInline()
-			
 			--local hopLocation = category:AddDropdown("Location", {"Fort Arthur", "Grayridge Bank"}, 1)
 			local locations = {
 				[1] = (game.Workspace.FortArthurSpawn1.CFrame * CFrame.new(0, 3, 0)).Position,
