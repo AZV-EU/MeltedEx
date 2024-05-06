@@ -12,6 +12,15 @@ with open(target, "r") as f:
     origVersion = lines[0][17:-2]
     lines[1] = "_G.MX_ENV = \"PROD\"\n"
 
+with open(target, "w") as f:
+    f.writelines(lines)
+
+print(f'Updating to v{origVersion}')
+subprocess.run(["git", "add", "."])
+subprocess.run(["git", "status"])
+subprocess.run(["git", "commit", "-m", f"v{origVersion}"])
+subprocess.run(["git", "push"])
+
 micro = int(origVersion[origVersion.rindex('.')+1:][0])
 minor = int(origVersion[origVersion.index('.')+1:origVersion.rindex('.')])
 major = int(origVersion[:origVersion.index('.')])
@@ -26,16 +35,6 @@ if buildAlpha == 'a':
             major += 1
 version = f'{major}.{minor}.{micro}{buildAlpha}'
 lines[0] = f'_G.MX_VERSION = \"{version}\"\n'
-
-with open(target, "w") as f:
-    f.writelines(lines)
-
-print(f'Updating v{origVersion} -> v{version}')
-subprocess.run(["git", "add", "."])
-subprocess.run(["git", "status"])
-subprocess.run(["git", "commit", "-m", f"v{version}"])
-subprocess.run(["git", "push"])
-
 lines[1] = "_G.MX_ENV = \"DEV\"\n"
 
 with open(target, "w") as f:
