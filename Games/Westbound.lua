@@ -38,12 +38,13 @@ DIN.OnInvoke = function(command, ...)
 		if not GSM then GSM = require(args[1]) end
 		for gunName,gunData in pairs(GSM) do
 			gunData.AutoFire = true
-			gunData.ReloadSpeed = 0.1
+			gunData.FullReload = true
 			gunData.equipTime = 0
 			gunData.EquipDelay = 0
 			gunData.Spread = 0
-			gunData.FullReload = true
-			gunData.MaxShots = 1000
+			-- dangerously obvious
+			--gunData.ReloadSpeed = 0.1
+			--gunData.MaxShots = 1000
 		end
 	elseif command == "GLMFIX" and args[1] then
 		if not GLM then GLM = require(args[1]) end
