@@ -109,9 +109,15 @@ do
 	end
 end
 
-function module.AimSource()
-	if game.Workspace.CurrentCamera then
-		return game.Workspace.CurrentCamera.CFrame.Position
+do
+	local root
+	function module.AimSource()
+		if plr and plr.Character and  then
+			local root = plr.Character:FindFirstChild("HumanoidRootPart")
+			if root then
+				return root.Position
+			end
+		end
 	end
 end
 
