@@ -4,7 +4,7 @@ local module = {
 
 local CONSTANTS = {
 	TweenInfoDefault = TweenInfo.new(0.2, Enum.EasingStyle.Linear),
-	MinimizeWidth = 160
+	MinimizeWidth = 200
 }
 
 local UserInputService = _G.SafeGetService("UserInputService")
@@ -25,7 +25,11 @@ function module.Init()
 	local mainFrame = module.GUI:FindFirstChild("MainFrame")
 	CONSTANTS.MaximizeWidth = mainFrame.Size.X.Offset
 	local titleBar = mainFrame:FindFirstChild("TitleBar")
-	titleBar.Text = string.format("  MeltedEx v%s", _G.MX_VERSION)
+	if _G.MX_ENV == "PROD" then
+		titleBar.Text = string.format(" MeltedEx v%s", _G.MX_VERSION)
+	else
+		titleBar.Text = string.format(" MeltedEx v%s (%s)", _G.MX_VERSION, _G.MX_ENV)
+	end
 	local minimizeButton = titleBar:FindFirstChild("MinimizeButton")
 	
 	local mainContainer = mainFrame:FindFirstChild("Container")
