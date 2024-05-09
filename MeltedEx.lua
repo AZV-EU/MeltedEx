@@ -1,4 +1,4 @@
-_G.MX_VERSION = "0.6.1u"
+_G.MX_VERSION = "0.6.1v"
 _G.MX_ENV = "PROD"
 
 local REPOSITORY = {
@@ -126,14 +126,17 @@ repeat
 	plr = Players.LocalPlayer
 until plr and plr:FindFirstChild("PlayerScripts")
 
-log("Loading ESP System")
-_G.MX_ESPSystem = _G.LoadRemoteModule(_G.MX_BaseURL .. "Systems/ESPSystem.lua", "ESPSystem")
-log("Loading Flight System")
-_G.MX_FlightSystem = _G.LoadRemoteModule(_G.MX_BaseURL .. "Systems/FlightSystem.lua", "FlightSystem")
-log("Loading Aimbot System")
-_G.MX_AimbotSystem = _G.LoadRemoteModule(_G.MX_BaseURL .. "Systems/AimbotSystem.lua", "AimbotSystem")
-log("Loading UI Handler")
-_G.MX_UIHandler = _G.LoadRemoteModule(_G.MX_BaseURL .. "Systems/UIHandler.lua", "UIHandler")
+local f, err = pcall(function()
+	log("Loading ESP System")
+	_G.MX_ESPSystem = _G.LoadRemoteModule(_G.MX_BaseURL .. "Systems/ESPSystem.lua", "ESPSystem")
+	log("Loading Flight System")
+	_G.MX_FlightSystem = _G.LoadRemoteModule(_G.MX_BaseURL .. "Systems/FlightSystem.lua", "FlightSystem")
+	log("Loading Aimbot System")
+	_G.MX_AimbotSystem = _G.LoadRemoteModule(_G.MX_BaseURL .. "Systems/AimbotSystem.lua", "AimbotSystem")
+	log("Loading UI Handler")
+	_G.MX_UIHandler = _G.LoadRemoteModule(_G.MX_BaseURL .. "Systems/UIHandler.lua", "UIHandler")
+end)
+if not f then warn("ERR")
 
 log("Initializing UI")
 do
