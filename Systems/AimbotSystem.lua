@@ -112,7 +112,7 @@ end
 do
 	local root
 	function module.AimSource()
-		if plr and plr.Character and  then
+		if plr and plr.Character then
 			local root = plr.Character:FindFirstChild("HumanoidRootPart")
 			if root then
 				return root.Position
