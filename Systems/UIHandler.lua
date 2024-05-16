@@ -7,9 +7,10 @@ local CONSTANTS = {
 	MinimizeWidth = 200
 }
 
-local UserInputService = _G.SafeGetService("UserInputService")
+local Players = _G.SafeGetService("Players")
 local TextService = _G.SafeGetService("TextService")
 local TweenService = _G.SafeGetService("TweenService")
+local UserInputService = _G.SafeGetService("UserInputService")
 
 local connections = {}
 
@@ -19,6 +20,7 @@ function module.Init()
 	module.GUI = Instance.new("ScreenGui", game.CoreGui)
 	module.GUI.Name = "MXUI"
 	module.GUI.Enabled = false
+	module.GUI.DisplayOrder = 9999
 	loader.Import(module.GUI)
 	
 	-- declare base components
@@ -31,6 +33,9 @@ function module.Init()
 		titleBar.Text = string.format(" MeltedEx v%s (%s)", _G.MX_VERSION, _G.MX_ENV)
 	end
 	local minimizeButton = titleBar:FindFirstChild("MinimizeButton")
+	
+	local modalWindow = module.GUI:FindFirstChild("ModalWindow")
+	modalWindow.Parent = nil
 	
 	local mainContainer = mainFrame:FindFirstChild("Container")
 	local categoryFrame = mainContainer:FindFirstChild("CategoryFrame")
@@ -166,7 +171,7 @@ function module.Init()
 				elseif element.Class == elementButton then
 					element.UI.TextButton.TextColor3 = enabled and Color3.new(1, 1, 1) or Color3.new(0.7, 0.7, 0.7)
 					element.UI.TextButton.AutoButtonColor = enabled
-				elseif element.Class == element.Class == elementCheckbox then
+				elseif element.Class == elementCheckbox then
 					element.UI.TextLabel.TextColor3 = enabled and Color3.new(1, 1, 1) or Color3.new(0.7, 0.7, 0.7)
 					element.UI.CheckboxToggle.Indicator.BackgroundColor3 = enabled and Color3.new(1, 1, 1) or Color3.new(0.7, 0.7, 0.7)
 				end
@@ -212,7 +217,7 @@ function module.Init()
 			end
 			label:SetText(text)
 			
-			function button:SetColor(color)
+			function label:SetColor(color)
 				label.UI.TextColor3 = color
 			end
 			
@@ -431,8 +436,100 @@ function module.Init()
 			return slider
 		end
 		
+		function category:AddDropdown(options, default, onChange)
+			local dropdown = {
+				UI = elementDropdown:Clone(),
+				Options = options,
+				SelectedOption = default and options[default] or "",
+				Class = elementDropdown,
+				Enabled = true
+			}
+			SetupElement(dropdown)
+			
+			function button:SetColor(color)
+				label.UI.TextColor3 = color
+			end
+			
+			return label
+		end
+		
 		module.Categories[name] = category
 		return module.Categories[name]
+	end
+	
+	module.CurrentModal = nil
+	function module:HideModal(option)
+		if module.CurrentModal then
+			if module.CurrentModal.OnSelected then
+				local f, err = pcall(module.CurrentModal.OnSelected, option)
+				if not f then
+					warn(err)
+				end
+			end
+			pcall(module.CurrentModal.Window.Destroy, module.CurrentModal.Window)
+		end
+		module.CurrentModal = nil
+	end
+	function module:ShowModal(title, options, onSelected)
+		if module.CurrentModal then
+			module:HideModal()
+		end
+		if not options then return end
+		module.CurrentModal = {
+			Window = modalWindow:Clone(),
+			Options = options,
+			OnSelected = onSelected
+		}
+		module.CurrentModal.Window.TitleBar.Text = tostring(title)
+		module.CurrentModal.Window.TitleBar.CloseButton.Activated:Connect(function()
+			module:HideModal()
+		end)
+		local filterBox = module.CurrentModal.Window.FilterBox
+		local optionUI = module.CurrentModal.Window.Content.TextButton
+		optionUI.Parent = nil
+		function module.CurrentModal:Update(newOptions)
+			if not newOptions then return end
+			module.CurrentModal.Options = newOptions
+			for _,v in pairs(module.CurrentModal.Window.Content:GetChildren()) do
+				if v:IsA("TextButton") then
+					v:Destroy()
+				end
+			end
+			for index,option in pairs(newOptions) do
+				local ui = optionUI:Clone()
+				ui.Name = "Option" .. tostring(index)
+				if not option.Image then
+					ui.Text = option.Text
+					if option.Color then
+						ui.TextColor3 = option.Color
+					end
+				else
+					ui.Text = ""
+					ui.ImageLabel.Image = option.Image
+					ui.TextLabel.Text = option.Text
+					if option.Color then
+						ui.TextLabel.TextColor3 = option.Color
+					end
+					ui.ImageLabel.Visible = true
+					ui.TextLabel.Visible = true
+				end
+				ui.Visible = option.Text:lower():find(filterBox.Text:lower())
+				ui.Activated:Connect(function()
+					module:HideModal(index)
+				end)
+				ui.Parent = module.CurrentModal.Window.Content
+			end
+		end
+		module.CurrentModal:Update(options)
+		filterBox:GetPropertyChangedSignal("Text"):Connect(function()
+			for _,v in pairs(module.CurrentModal.Window.Content:GetChildren()) do
+				if v:IsA("TextButton") then
+					v.Visible = v.Text:lower():find(filterBox.Text:lower()) or v.TextLabel.Text:lower():find(filterBox.Text:lower())
+				end
+			end
+		end)
+		module.CurrentModal.Window.Visible = true
+		module.CurrentModal.Window.Parent = module.GUI
 	end
 	
 	module:Move(module.GUI.AbsoluteSize.X - CONSTANTS.MaximizeWidth, module.GUI.AbsoluteSize.Y * .5)
@@ -445,6 +542,9 @@ function module.Cleanup()
 		pcall(conn.Disconnect, conn)
 	end
 	module.GUI:Destroy()
+	if module.CurrentModal then
+		module:HideModal()
+	end
 end
 
 return module

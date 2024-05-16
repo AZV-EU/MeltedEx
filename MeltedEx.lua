@@ -1,4 +1,4 @@
-_G.MX_VERSION = "0.6.1v"
+_G.MX_VERSION = "0.6.1w"
 _G.MX_ENV = "PROD"
 
 local REPOSITORY = {
@@ -47,7 +47,7 @@ end
 local MX_RUNNING = true
 
 local BaseURLs = {
-	DEV = "http://azv.ddns.net/MeltedEx/",
+	DEV = "https://azv.ddns.net/MeltedEx/",
 	PROD = "https://raw.githubusercontent.com/AZV-EU/MeltedEx/main/"
 }
 
@@ -136,7 +136,7 @@ local f, err = pcall(function()
 	log("Loading UI Handler")
 	_G.MX_UIHandler = _G.LoadRemoteModule(_G.MX_BaseURL .. "Systems/UIHandler.lua", "UIHandler")
 end)
-if not f then warn("ERR")
+if not f then warn("ERR") end
 
 log("Initializing UI")
 do
@@ -194,12 +194,6 @@ do -- Main category
 			end
 		end))
 	end category:EndInline()
-	
-	--[[
-	do category:BeginInline()
-	
-	end category:EndInline()
-	]]
 	
 	do category:BeginInline()
 		category:AddSlider("Fly Speed", _G.MX_SETTINGS.FLY.NormalDefault, _G.MX_SETTINGS.FLY.NormalMin, _G.MX_SETTINGS.FLY.NormalMax, function(newValue)
@@ -298,6 +292,165 @@ do -- Main category
 	end category:EndInline()
 	
 	_G.MX_UIHandler:SelectCategory(category.Name)
+end
+
+do -- fun category ;)
+	local category = _G.MX_UIHandler:AddCategory("Players")
+	
+	local SelectedPlayer
+	local selectPlayerBtn
+	local playersOptions = {}
+	
+	local updateConnections = {}
+	
+	local function PlayerSelected(index)
+		selectPlayerBtn:SetEnabled(true)
+		for _,conn in pairs(updateConnections) do
+			pcall(conn.Disconnect, conn)
+		end
+		updateConnections = {}
+		if not index then
+			SelectedPlayer = nil
+			selectPlayerBtn:SetText("Select Player")
+			selectPlayerBtn:SetColor(_G.COLORS.WHITE)
+		else
+			SelectedPlayer = playersOptions[index].Player
+			selectPlayerBtn:SetText(SelectedPlayer.DisplayName)
+			local function UpdateColor()
+				if SelectedPlayer.Character then
+					local team = _G.MX_ESPSystem.GetTeam(SelectedPlayer.Character)
+					if team then
+						selectPlayerBtn:SetColor(team.Color)
+					end
+				end
+			end
+			UpdateColor()
+			local respawnConn = SelectedPlayer.CharacterAdded:Connect(UpdateColor)
+			table.insert(MXConnections, respawnConn); table.insert(updateConnections, respawnConn)
+			local teamChangeConn = SelectedPlayer:GetPropertyChangedSignal("Team"):Connect(UpdateColor)
+			table.insert(MXConnections, teamChangeConn); table.insert(updateConnections, teamChangeConn)
+		end
+	end
+	
+	local function UpdatePlayersOptions()
+		playersOptions = {}
+		for _,v in pairs(Players:GetPlayers()) do
+			if v ~= plr then
+				local option = {
+					Player = v,
+					Text = v.DisplayName ~= v.Name and string.format("%s (%s)", v.DisplayName, v.Name) or v.DisplayName,
+					Image = string.format("rbxthumb://type=AvatarBust&id=%d&w=180&h=180", v.UserId)
+				}
+				if v.Character then
+					local team = _G.MX_ESPSystem.GetTeam(v.Character)
+					if team then
+						option.Color = team.Color
+					end
+				end
+				table.insert(playersOptions, option)
+			end
+		end
+	end
+	
+	selectPlayerBtn = category:AddButton("Select Player", function()
+		if _G.MX_UIHandler.CurrentModal then return end
+		selectPlayerBtn:SetEnabled(false)
+		UpdatePlayersOptions()
+		_G.MX_UIHandler:ShowModal("Select Target Player", playersOptions, PlayerSelected)
+	end)
+	
+	table.insert(MXConnections, Players.PlayerAdded:Connect(function()
+		if _G.MX_UIHandler.CurrentModal then
+			UpdatePlayersOptions()
+			_G.MX_UIHandler.CurrentModal:Update(playersOptions)
+		end
+	end))
+	
+	table.insert(MXConnections, Players.PlayerRemoving:Connect(function(player)
+		if _G.MX_UIHandler.CurrentModal then
+			repeat task.wait(.33) until not player or not player.Parent or not MX_RUNNING
+			UpdatePlayersOptions()
+			_G.MX_UIHandler.CurrentModal:Update(playersOptions)
+		elseif player == SelectedPlayer then
+			PlayerSelected()
+		end
+	end))
+	
+	category:BeginInline()
+	local function RestoreCamera()
+		if plr and plr.Character then
+			local human = plr.Character:FindFirstChildWhichIsA("Humanoid")
+			if human then
+				Workspace.CurrentCamera.CameraSubject = human
+			end
+		end
+	end
+	local spectateCheckbox
+	spectateCheckbox = category:AddCheckbox("Spectate", function(state)
+		if state then
+			while task.wait() and spectateCheckbox.Checked and SelectedPlayer and MX_RUNNING do
+				if SelectedPlayer.Character then
+					local human = SelectedPlayer.Character:FindFirstChildWhichIsA("Humanoid")
+					if human then
+						Workspace.CurrentCamera.CameraSubject = human
+						continue
+					end
+				end
+				RestoreCamera()
+			end
+			spectateCheckbox:SetChecked(false)
+		else
+			RestoreCamera()
+		end
+	end)
+	
+	local stalkerCheckbox
+	stalkerCheckbox = category:AddCheckbox("Stalker", function(state)
+		if state then
+			local myRoot, targetRoot
+			while task.wait() and stalkerCheckbox.Checked and MX_RUNNING do
+				if plr.Character and SelectedPlayer and SelectedPlayer.Character then
+					myRoot = plr.Character:FindFirstChild("HumanoidRootPart")
+					targetRoot = SelectedPlayer.Character:FindFirstChild("HumanoidRootPart")
+					if myRoot and targetRoot then
+						myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 3)
+					end
+				end
+			end
+		end
+	end)
+	category:EndInline()
+	
+	local toolKill
+	toolKill = category:AddCheckbox("Tool-kill", function(state)
+		if state then
+			local targetPart, targetMotor, targetTorso, tool, toolHandle
+			while task.wait() and toolKill.Checked and MX_RUNNING do
+				if plr.Character and SelectedPlayer and SelectedPlayer.Character then
+					targetTorso = SelectedPlayer.Character:FindFirstChild("Torso")
+					targetPart = targetTorso and SelectedPlayer.Character:FindFirstChild("Left Leg") or SelectedPlayer.Character:FindFirstChild("LeftFoot")
+					tool = plr.Character:FindFirstChildWhichIsA("Tool")
+					if tool and targetPart then
+						targetMotor = targetTorso and targetTorso:FindFirstChild("Left Hip") or targetPart:FindFirstChild("LeftAnkle")
+						toolHandle = tool:FindFirstChild("Handle")
+						if toolHandle and targetMotor then
+							targetMotor.Enabled = false
+							targetPart.CFrame = toolHandle.CFrame
+						end
+					end
+				end
+			end
+			if targetMotor then
+				targetMotor.Enabled = true
+			end
+		end
+	end)
+	
+	category:AddButton("Teleport To", function()
+		if SelectedPlayer and SelectedPlayer.Character and SelectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
+			_G.TeleportPlayerTo(SelectedPlayer.Character.HumanoidRootPart.CFrame)
+		end
+	end)
 end
 
 if GameModule and GameModule.Init then

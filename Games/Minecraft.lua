@@ -59,6 +59,7 @@ function module.Init(category, connections)
 		Attack = GameRemotes:WaitForChild("Attack"),
 		ChangeSlot = GameRemotes:WaitForChild("ChangeSlot"),
 		DropItem = GameRemotes:WaitForChild("DropItem"),
+		MoveItem = GameRemotes:WaitForChild("MoveItem"),
 		BreakBlock = GameRemotes:WaitForChild("BreakBlock"),
 		AcceptBreakBlock = GameRemotes:WaitForChild("AcceptBreakBlock"),
 		UseBlock = GameRemotes:WaitForChild("UseBlock")
@@ -66,6 +67,8 @@ function module.Init(category, connections)
 	
 	local PlayerGui = plr:WaitForChild("PlayerGui")
 	local hud = PlayerGui:WaitForChild("HUDGui")
+	local overshadow = hud:WaitForChild("Overshadow")
+	local inventoryHud = hud:WaitForChild("Inventory")
 	
 	local Blocks = game.Workspace:WaitForChild("Blocks")
 	local Fluids = game.Workspace:WaitForChild("Fluid")
@@ -113,10 +116,47 @@ function module.Init(category, connections)
 		Instance.new("BoolValue", fake).Name = "_isFake"
 		DemoRemote:Destroy()
 	end
+	
+	-- faster throw held items
+	local function GetMyInventory()
+		if plr and plr.Character then
+			return plr.Character:FindFirstChild("Inventory")
+		end
+	end
+	
+	local throwBackground = overshadow:FindFirstChildWhichIsA("TextButton") or Instance.new("TextButton", overshadow)
+	do
+		throwBackground.Size = UDim2.fromScale(1, 1)
+		throwBackground.BackgroundTransparency = 1
+		throwBackground.AutoButtonColor = false
+		throwBackground.Modal = true
+		throwBackground.Text = ""
+		throwBackground.Interactable = true
+		throwBackground.Active = true
+		table.insert(connections, throwBackground.Activated:Connect(function(input)
+			if 	input.Position.X >= inventoryHud.AbsolutePosition.X and
+				input.Position.X <= inventoryHud.AbsolutePosition.X + inventoryHud.AbsoluteSize.X and
+				input.Position.Y >= inventoryHud.AbsolutePosition.Y and
+				input.Position.Y <= inventoryHud.AbsolutePosition.Y + inventoryHud.AbsoluteSize.Y then
+				return
+			else
+				local inventory = GetMyInventory()
+				if inventory then
+					local heldSlot = inventory:FindFirstChild("Slot-1")
+					if heldSlot then
+						local heldItem = HttpService:JSONDecode(heldSlot.Value)
+						if heldItem.count > 0 then
+							Remotes.DropItem:InvokeServer(true)
+						end
+					end
+				end
+			end
+		end))
+	end
 
 	category:BeginInline()
 	local autoAttack
-	autoAttack = category:AddCheckbox("Auto-Attack", function(state)
+	autoAttack = category:AddCheckbox("[C] Auto-Attack", function(state)
 		if state then
 			while task.wait(.33) and autoAttack.Checked and module.On do
 				local closest, dist = nil, 0
@@ -308,6 +348,60 @@ function module.Init(category, connections)
 	end)
 	itemsXRayFilter = category:AddCheckbox("Filter", updateItemsXRay)
 	itemsXRayFilter:SetVisible(false)
+	category:EndInline()
+	
+	category:BeginInline()
+	-- chest start = 36 end = 62
+	local function GetNextFreeSlot(rangeMin, rangeMax)
+		local inventory = GetMyInventory()
+		if inventory then
+			local slot, slotItem
+			for i = rangeMin, rangeMax do
+				slot = inventory:FindFirstChild("Slot" .. tostring(i))
+				if slot then
+					slotItem = HttpService:JSONDecode(slot.Value)
+					if slotItem and slotItem.count <= 0 then
+						return i
+					end
+				end
+			end
+		end
+		return -1
+	end
+	category:AddButton("Take ⬇️ All Items", function()
+		local inventory = GetMyInventory()
+		if inventory then
+			local slot, slotItem, targetSlot
+			for i = 36, 62 do
+				targetSlot = GetNextFreeSlot(0, 35)
+				if targetSlot < 0 then break end
+				slot = inventory:FindFirstChild("Slot" .. tostring(i))
+				if slot then
+					slotItem = HttpService:JSONDecode(slot.Value)
+					if slotItem and slotItem.count > 0 then
+						Remotes.MoveItem:InvokeServer(i, targetSlot, slotItem.count == 1 and true or 64)
+					end
+				end
+			end
+		end
+	end)
+	category:AddButton("Put ⬆️ All Items", function()
+		local inventory = GetMyInventory()
+		if inventory then
+			local slot, slotItem, targetSlot
+			for i = 0, 35 do
+				targetSlot = GetNextFreeSlot(36, 62)
+				if targetSlot < 0 then break end
+				slot = inventory:FindFirstChild("Slot" .. tostring(i))
+				if slot then
+					slotItem = HttpService:JSONDecode(slot.Value)
+					if slotItem and slotItem.count > 0 then
+						Remotes.MoveItem:InvokeServer(i, targetSlot, slotItem.count == 1 and true or 64)
+					end
+				end
+			end
+		end
+	end)
 	category:EndInline()
 	
 	--[[

@@ -2,6 +2,10 @@ local module = {
 	On = false
 }
 
+function module.PreInit()
+	_G.MX_SETTINGS.AIMBOT.PingCompensation = false
+end
+
 local BRIDGE, BRIDGE_IN, BRIDGE_OUT
 
 local objects = {}
@@ -703,10 +707,7 @@ end]])
 				end
 			end
 			if closestHorse then
-				GeneralEvents.MountHorse:InvokeServer(
-					closestHorse,
-					"Back"
-				)
+				GeneralEvents.MountHorse:InvokeServer(closestHorse, "Back")
 			end
 		end)
 		category:EndInline()
@@ -778,7 +779,7 @@ end]])
 		end)
 		
 		do -- buy all preset gear
-			local gear = {"Arrows", "RifleAmmo", "SniperAmmo", "BIG Dynamite", "Health Potion"}
+			local gear = {"Arrows", "PistolAmmo", "RifleAmmo", "SniperAmmo", "ShotgunAmmo", "BIG Dynamite", "Health Potion"}
 			category:AddButton("Buy Max Gear", function()
 				for _,item in pairs(gear) do
 					GeneralEvents.BuyItem:InvokeServer(item, true)
@@ -829,22 +830,25 @@ end]])
 	
 	local Christmas = game.Workspace:FindFirstChild("Christmas")
 	if Christmas then
-		local autoChristmas = category:AddCheckbox("Auto Collect Presents")
-		autoChristmas:SetChecked(true)
-		
-		task.spawn(function()
-			while task.wait(5) and module.On do
-				local lostPresents = Christmas:FindFirstChild("LostPresents")
-				if lostPresents then
-					for _,desc in pairs(lostPresents:GetDescendants()) do
-						if desc:IsA("BasePart") and desc.Name == "ChristmasPresent" then
-							_G.TouchObject(desc)
+		local autoChristmas
+		autoChristmas = category:AddCheckbox("Auto Collect Presents", function(state)
+			if state then
+				while task.wait(5) and autoChristmas.Checked and module.On do
+					local lostPresents = Christmas:FindFirstChild("LostPresents")
+					if lostPresents then
+						for _,desc in pairs(lostPresents:GetDescendants()) do
+							if desc:IsA("BasePart") and desc.Name == "ChristmasPresent" then
+								_G.TouchObject(desc)
+							end
 						end
 					end
 				end
 			end
 		end)
+		--autoChristmas:SetChecked(true)
 	end
+	
+	_G.MX_ESPSystem.Update()
 end
 
 function module.Shutdown()

@@ -74,11 +74,11 @@ do
 	local castParts
 	function module.GetCastParts(target)
 		castParts = {}
-		if target:FindFirstChild("Head") then
-			table.insert(castParts, target.Head)
-		end
 		if target:FindFirstChild("HumanoidRootPart") then
 			table.insert(castParts, target.HumanoidRootPart)
+		end
+		if target:FindFirstChild("Head") then
+			table.insert(castParts, target.Head)
 		end
 		return castParts
 	end

@@ -2,6 +2,7 @@ local module = {}
 
 function module.PreInit()
 	_G.MX_SETTINGS.ESP.Mode = 1
+	_G.MX_SETTINGS.AIMBOT.PingCompensation = false
 end
 
 function module.Init(category, connections)
