@@ -1,9 +1,10 @@
-_G.MX_VERSION = "0.6.1w"
+_G.MX_VERSION = "0.6.1x"
 _G.MX_ENV = "DEV"
 
 local REPOSITORY = {
 	[286090429] = "Arsenal.lua",
 	[893973440] = "FleeTheFacility.lua",
+	[4448566543] = "BananaEats.lua",
 	[142823291] = "MurderMystery2.lua",
 	[9872472334] = "Evade.lua",
 	
@@ -96,7 +97,7 @@ _G.MX_SETTINGS = {
 	AIMBOT = {
 		Enabled = true,
 		Checked = false,
-		PingCompensation = true
+		PingCompensation = false
 	}
 }
 
@@ -421,6 +422,7 @@ do -- fun category ;)
 	end)
 	category:EndInline()
 	
+	category:BeginInline()
 	local toolKill
 	toolKill = category:AddCheckbox("Tool-kill", function(state)
 		if state then
@@ -451,6 +453,15 @@ do -- fun category ;)
 			_G.TeleportPlayerTo(SelectedPlayer.Character.HumanoidRootPart.CFrame)
 		end
 	end)
+	category:EndInline()
+	
+	category:BeginInline()
+	category:AddButton("Teleport To", function()
+		if SelectedPlayer and SelectedPlayer.Character and SelectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
+			_G.TeleportPlayerTo(SelectedPlayer.Character.HumanoidRootPart.CFrame)
+		end
+	end)
+	category:EndInline()
 end
 
 if GameModule and GameModule.Init then
