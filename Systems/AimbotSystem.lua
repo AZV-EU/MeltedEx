@@ -74,11 +74,11 @@ do
 	local castParts
 	function module.GetCastParts(target)
 		castParts = {}
-		if target:FindFirstChild("HumanoidRootPart") then
-			table.insert(castParts, target.HumanoidRootPart)
-		end
 		if target:FindFirstChild("Head") then
 			table.insert(castParts, target.Head)
+		end
+		if target:FindFirstChild("HumanoidRootPart") then
+			table.insert(castParts, target.HumanoidRootPart)
 		end
 		return castParts
 	end
@@ -149,8 +149,8 @@ function module.SetEnabled(enabled)
 		TargetLine.Transparency = 0.5
 		TargetLine.Color = _G.COLORS.GREEN
 		
-		local cam, los, fovPos, pos, aimPos
-		RunService:BindToRenderStep("MXAIM", Enum.RenderPriority.Camera.Value - 10, function()
+		local cam, los, fovPos, pos, aimPos, prevTarget
+		RunService:BindToRenderStep("MXAIM", Enum.RenderPriority.Camera.Value + _G.MX_SETTINGS.AIMBOT.RenderPriority, function()
 			cam = Workspace.CurrentCamera
 			if module.CanUse() and cam and cam.CameraSubject then
 				fovPos = Vector2.new(mouse.X, mouse.Y)
@@ -163,6 +163,10 @@ function module.SetEnabled(enabled)
 				for _,target in pairs(GetTargets()) do
 					los, module.CurrentTarget = module.CheckLineOfSight(target[1])
 					if los then
+						if module.TargetChangeCallback and prevTarget and module.CurrentTarget ~= prevTarget then
+							module.TargetChangeCallback(prevTarget)
+						end
+						prevTarget = module.CurrentTarget
 						aimPos = cam:WorldToScreenPoint(module.CurrentTarget.Position)
 						TargetLine.To = Vector2.new(aimPos.X, aimPos.Y)
 						TargetLine.Visible = true
@@ -179,6 +183,10 @@ function module.SetEnabled(enabled)
 			TargetLine.Visible = false
 			FOVCircle.Color = _G.COLORS.WHITE
 			module.CurrentTarget = nil
+			if module.TargetChangeCallback and prevTarget then
+				module.TargetChangeCallback(prevTarget)
+			end
+			prevTarget = nil
 		end)
 	elseif module.Enabled and not enabled then
 		module.Enabled = false

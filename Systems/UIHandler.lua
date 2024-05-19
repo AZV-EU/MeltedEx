@@ -213,12 +213,12 @@ function module.Init()
 			function label:SetText(newText)
 				newText = tostring(newText)
 				label.Text = newText
-				label.UI.Text = newText
+				label.UI.TextLabel.Text = newText
 			end
 			label:SetText(text)
 			
 			function label:SetColor(color)
-				label.UI.TextColor3 = color
+				label.UI.TextLabel.TextColor3 = color
 			end
 			
 			return label

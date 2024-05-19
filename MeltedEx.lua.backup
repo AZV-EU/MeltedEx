@@ -1,4 +1,4 @@
-_G.MX_VERSION = "0.6.1x"
+_G.MX_VERSION = "0.6.1y"
 _G.MX_ENV = "DEV"
 
 local REPOSITORY = {
@@ -7,6 +7,7 @@ local REPOSITORY = {
 	[4448566543] = "BananaEats.lua",
 	[142823291] = "MurderMystery2.lua",
 	[9872472334] = "Evade.lua",
+	[13822889] = "LumberTycoon.lua",
 	
 	[7584496019] = "SquidGamesObby.lua",
 	[7952502098] = "SquidGamesObby2.lua",
@@ -19,6 +20,7 @@ local REPOSITORY = {
 	
 	[1340132428] = "ArmoredPatrol.lua",
 	[10518166490] = "ArmoredPatrol.lua",
+	[5326405001] = "BaseBattles.lua",
 	
 	[746820961] = "Unit1968.lua",
 	[15514727567] = "GunfightArena.lua",
@@ -97,7 +99,8 @@ _G.MX_SETTINGS = {
 	AIMBOT = {
 		Enabled = true,
 		Checked = false,
-		PingCompensation = false
+		PingCompensation = false,
+		RenderPriority = 10
 	}
 }
 
@@ -126,6 +129,8 @@ repeat
 	task.wait()
 	plr = Players.LocalPlayer
 until plr and plr:FindFirstChild("PlayerScripts")
+
+--_G.SetCapabilities(plr, "Kick", 1337)
 
 local f, err = pcall(function()
 	log("Loading ESP System")
@@ -288,6 +293,14 @@ do -- Main category
 				if human then
 					human:ChangeState(human:GetState() ~= Enum.HumanoidStateType.Physics and Enum.HumanoidStateType.Physics or Enum.HumanoidStateType.GettingUp)
 				end
+			end
+		end)
+	end category:EndInline()
+	
+	do category:BeginInline()
+		category:AddButton("Tp to Cam", function()
+			if game.Workspace.CurrentCamera then
+				game.Workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
 			end
 		end)
 	end category:EndInline()
@@ -456,9 +469,22 @@ do -- fun category ;)
 	category:EndInline()
 	
 	category:BeginInline()
-	category:AddButton("Teleport To", function()
+	category:AddButton("Freeze", function()
 		if SelectedPlayer and SelectedPlayer.Character and SelectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
-			_G.TeleportPlayerTo(SelectedPlayer.Character.HumanoidRootPart.CFrame)
+			SelectedPlayer.Character.HumanoidRootPart.Anchored = true
+		end
+	end)
+	category:AddButton("Bring", function()
+		if SelectedPlayer and SelectedPlayer.Character and SelectedPlayer.Character:FindFirstChild("HumanoidRootPart") and plr.Character then
+			local root = plr.Character:FindFirstChild("HumanoidRootPart")
+			if root then
+				SelectedPlayer.Character.HumanoidRootPart.CFrame = root.CFrame * CFrame.new(0, 0, -2)
+			end
+		end
+	end)
+	category:AddButton("Thaw", function()
+		if SelectedPlayer and SelectedPlayer.Character and SelectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
+			SelectedPlayer.Character.HumanoidRootPart.Anchored = false
 		end
 	end)
 	category:EndInline()
