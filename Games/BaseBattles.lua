@@ -81,8 +81,8 @@ end]], "GunMods")
 				if player ~= plr and player.Character then
 					root = player.Character.PrimaryPart
 					vehicle = player.Character:FindFirstChild("Vehicle")
-					if vehicle and not vehicle.Value and root then
-						enabled = player:GetAttribute("Team") ~= plr:GetAttribute("Team") and hitboxesToggle.Checked
+					if vehicle and root then
+						enabled = not vehicle.Value and player:GetAttribute("Team") ~= plr:GetAttribute("Team") and hitboxesToggle.Checked
 						root.Size = enabled and Vector3.new(hitboxesSize.Value, hitboxesSize.Value, hitboxesSize.Value) or hitboxSizeDefault
 						root.Transparency = enabled and 0.99 or 0
 						root.CanCollide = false
