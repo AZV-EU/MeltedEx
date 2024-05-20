@@ -11,6 +11,11 @@ function module.Init(category, connections)
 	
 	do -- gun mods
 		_G.LoadLocalCode([[local data
+local custom = {
+	["Homing Launcher"] = function(data)
+		--data.firerate = 2
+	end
+}
 for _,config in pairs(game:GetService("ReplicatedStorage"):WaitForChild("Weapons"):WaitForChild("Guns"):GetDescendants()) do
 	if config:IsA("ModuleScript") and config.Name == "Configuration" then
 		data = require(config)
@@ -25,6 +30,9 @@ for _,config in pairs(game:GetService("ReplicatedStorage"):WaitForChild("Weapons
 		--data.firerate = 10
 		data.noYawRecoil = "true"
 		data.recoilCoefficient = 1
+		if custom[config.Parent.Name] then
+			custom[config.Parent.Name](data)
+		end
 	end
 end]], "GunMods")
 	end
@@ -73,6 +81,15 @@ end]], "GunMods")
 	
 	local hitboxSizeDefault = Vector3.new(2, 2, 1)
 	
+	local vehicleWhitelist = {
+		["Biplane"] = true,
+		["Dirtbike"] = true,
+		["Light Bike"] = true,
+		["Go-Kopter"] = true,
+		["Airboat"] = true,
+		["Dune Buggy"] = true
+	}
+	
 	task.spawn(function()
 		while task.wait(1) and module.On do
 			_G.MX_ESPSystem.Update()
@@ -82,7 +99,7 @@ end]], "GunMods")
 					root = player.Character.PrimaryPart
 					vehicle = player.Character:FindFirstChild("Vehicle")
 					if vehicle and root then
-						enabled = not vehicle.Value and player:GetAttribute("Team") ~= plr:GetAttribute("Team") and hitboxesToggle.Checked
+						enabled = (not vehicle.Value or vehicleWhitelist[vehicle.Value.Name]) and player:GetAttribute("Team") ~= plr:GetAttribute("Team") and hitboxesToggle.Checked
 						root.Size = enabled and Vector3.new(hitboxesSize.Value, hitboxesSize.Value, hitboxesSize.Value) or hitboxSizeDefault
 						root.Transparency = enabled and 0.99 or 0
 						root.CanCollide = false
