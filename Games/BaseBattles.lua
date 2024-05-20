@@ -20,8 +20,8 @@ for _,config in pairs(game:GetService("ReplicatedStorage"):WaitForChild("Weapons
 		end
 		data.bloomFactor = 0
 		data.automatic = true
-		data.maxAmmo = 100
-		data.MaxAmmo = 100
+		data.maxAmmo = 500
+		data.MaxAmmo = 500
 		--data.firerate = 10
 		data.noYawRecoil = "true"
 		data.recoilCoefficient = 1
