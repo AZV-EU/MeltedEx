@@ -11,11 +11,7 @@ function module.Init(category, connections)
 	
 	do -- gun mods
 		_G.LoadLocalCode([[local data
-local custom = {
-	["Homing Launcher"] = function(data)
-		--data.firerate = 2
-	end
-}
+local custom = {}
 for _,config in pairs(game:GetService("ReplicatedStorage"):WaitForChild("Weapons"):WaitForChild("Guns"):GetDescendants()) do
 	if config:IsA("ModuleScript") and config.Name == "Configuration" then
 		data = require(config)

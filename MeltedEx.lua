@@ -1,4 +1,4 @@
-_G.MX_VERSION = "0.6.2b"
+_G.MX_VERSION = "0.6.2c"
 _G.MX_ENV = "PROD"
 
 local REPOSITORY = {
@@ -15,6 +15,7 @@ local REPOSITORY = {
 	[13389049867] = "SquidGamesObby4.lua",
 	
 	[8200787440] = "EatBlobsSimulator.lua",
+	[15027718878] = "TheSpaceSimulator.lua",
 	
 	[2474168535] = "Westbound.lua",
 	
