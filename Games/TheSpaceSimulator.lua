@@ -75,7 +75,7 @@ function module.Init(category, connections)
 			end
 		end
 		ShowDoneMinerals()
-		while task.wait(5) and plr.leaderstats.Orbs.Value < 18 and module.On do
+		while task.wait(5) and plr.leaderstats.Orbs.Value < 19 and module.On do
 			ShowDoneMinerals()
 		end
 	end)

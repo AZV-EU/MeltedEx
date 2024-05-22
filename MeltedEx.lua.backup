@@ -1,4 +1,4 @@
-_G.MX_VERSION = "0.6.2c"
+_G.MX_VERSION = "0.6.2d"
 _G.MX_ENV = "DEV"
 
 local REPOSITORY = {
@@ -16,6 +16,7 @@ local REPOSITORY = {
 	
 	[8200787440] = "EatBlobsSimulator.lua",
 	[15027718878] = "TheSpaceSimulator.lua",
+	[6888253864] = "WackyWizards.lua",
 	
 	[2474168535] = "Westbound.lua",
 	
