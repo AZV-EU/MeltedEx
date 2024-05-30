@@ -434,11 +434,11 @@ function module.Init()
 				end
 			end
 			if nearest then
-				local blockPos = PtoT(block.Position)
-				Remotes.BreakBlock:FireServer(blockPos.X, blockPos.Y, blockPos.Z)
+				local cX, cY, cZ = PtoT(nearest.Position)
+				Remotes.BreakBlock:FireServer(cX, cY, cZ)
 				task.wait(0.7)
 				if Remotes.AcceptBreakBlock:InvokeServer() then
-					_G.LocalModuleInvoke(CWorld, blockPos.X, blockPos.Y, blockPos.Z)
+					_G.LocalModuleInvoke(CWorld, "destroyBlock", cX, cY, cZ)
 				end
 			end
 		end

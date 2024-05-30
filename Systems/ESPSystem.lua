@@ -22,18 +22,26 @@ module.BillboardStore:ClearAllChildren()
 
 local NameGuiTemplate = Instance.new("BillboardGui")
 NameGuiTemplate.AlwaysOnTop = true
-NameGuiTemplate.Size = UDim2.fromScale(30, 3)
+NameGuiTemplate.Size = UDim2.fromOffset(100, 30)
 NameGuiTemplate.ResetOnSpawn = false
 NameGuiTemplate.LightInfluence = 0
 NameGuiTemplate.StudsOffsetWorldSpace = Vector3.new(0, 4, 0)
 do
-	local tl = Instance.new("TextLabel", NameGuiTemplate)
+	local tl = Instance.new("TextLabel")
 	tl.BackgroundTransparency = 1
 	tl.Size = UDim2.fromScale(1, 1)
 	tl.Font = Enum.Font.Roboto
 	tl.TextSize = 16
-	tl.TextColor3 = Color3.new(1, 1, 1)
+	tl.TextColor3 = Color3.new(0.1, 0.1, 0.1)
 	tl.TextStrokeTransparency = 0
+	tl.TextXAlignment = Enum.TextXAlignment.Left
+	tl.ClipsDescendants = true
+	tl.Parent = NameGuiTemplate
+	
+	local ht = tl:Clone()
+	ht.Name = "HealthLabel"
+	ht.ZIndex = 2
+	ht.Parent = NameGuiTemplate
 end
 
 local function AllocateTeamFolder(name)
@@ -331,7 +339,11 @@ do
 		if state.Billboard and state.Billboard:FindFirstChild("TextLabel") then
 			xpcall(function()
 				state.Billboard.TextLabel.Text = player and player.DisplayName or target.Name
-				state.Billboard.TextLabel.TextColor3 = team.Color
+				state.Billboard.TextLabel.Size = UDim2.new(0, state.Billboard.TextLabel.TextBounds.X, 1, 0)
+				state.Billboard.TextLabel.Position = UDim2.new(0.5, -state.Billboard.TextLabel.Size.X.Offset/2, 0, 0)
+				state.Billboard.HealthLabel.Text = player and player.DisplayName or target.Name
+				state.Billboard.HealthLabel.TextColor3 = team.Color
+				state.Billboard.HealthLabel.Position = state.Billboard.TextLabel.Position
 				state.Billboard.Adornee = target:FindFirstChild("HumanoidRootPart") or target
 				state.Billboard.Enabled = state.Billboard.Adornee ~= nil
 			end, function(err) print("[MX::ESPSystem] UpdateTarget error:", err) end)
@@ -398,7 +410,8 @@ local PrivateConnections = {
 	PlayerRefresh = {},
 	PlayerTeamChanged = {},
 	PlayerCharacterRemoving = {},
-	PlayerCharacterAdded = {}
+	PlayerCharacterAdded = {},
+	PlayerHealthChanged = {}
 }
 
 local function SetupPrivateConnections()
@@ -428,8 +441,37 @@ local function SetupPrivateConnections()
 			end)
 		end
 		
+		if PrivateConnections.PlayerHealthChanged[player] then
+			pcall(PrivateConnections.PlayerHealthChanged[player].Disconnect, PrivateConnections.PlayerHealthChanged[player])
+			PrivateConnections.PlayerHealthChanged[player] = nil
+		end
+		
 		module.Update()
 		--module.UpdateTarget(chr, player)
+		
+		local state = TargetStateMemory[player.Character]
+		if state and state.Billboard and state.Billboard:FindFirstChild("HealthLabel") then
+			local f, err = pcall(function()
+				state.Billboard.HealthLabel.Size = state.Billboard.TextLabel.Size
+			end)
+			if not f then
+				print("[MX::ESPSystem] PlayerHealthChanged init failed:", err)
+			end
+		end
+		PrivateConnections.PlayerHealthChanged[player] = human:GetPropertyChangedSignal("Health"):Connect(function()
+			if state and state.Billboard and state.Billboard:FindFirstChild("HealthLabel") then
+				local f, err = pcall(function()
+					if human.MaxHealth < math.huge then
+						state.Billboard.HealthLabel.Size = UDim2.new(0, state.Billboard.TextLabel.Size.X.Offset * math.min(1, human.Health / human.MaxHealth), 1, 0)
+					else
+						state.Billboard.HealthLabel.Size = state.Billboard.TextLabel.Size
+					end
+				end)
+				if not f then
+					print("[MX::ESPSystem] PlayerHealthChanged update failed:", err)
+				end
+			end
+		end)
 	end
 	
 	local function SetupPlayer(player)
@@ -482,6 +524,11 @@ local function SetupPrivateConnections()
 				PrivateConnections.PlayerCharacterRemoving[player] = nil
 			end
 			
+			if PrivateConnections.PlayerHealthChanged[player] then
+				pcall(PrivateConnections.PlayerHealthChanged[player].Disconnect, PrivateConnections.PlayerHealthChanged[player])
+				PrivateConnections.PlayerHealthChanged[player] = nil
+			end
+			
 			if player.Character then
 				pcall(function() player.Character.Parent = nil end)
 			end
@@ -512,7 +559,8 @@ local function CleanupPrivateConnections()
 		PlayerRefresh = {},
 		PlayerTeamChanged = {},
 		PlayerCharacterRemoving = {},
-		PlayerCharacterAdded = {}
+		PlayerCharacterAdded = {},
+		PlayerHealthChanged = {}
 	}
 end
 
