@@ -4,7 +4,7 @@ local module = {}
 	_G.MX_SETTINGS.ESP.Mode = 1
 end]]
 
-function module.Init(category, connections)
+function module.Init()
 	local API = ReplicatedStorage:WaitForChild("API")
 	
 	do -- Fsys decryptor agent

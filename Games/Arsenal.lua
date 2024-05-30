@@ -5,7 +5,7 @@ function module.PreInit()
 	_G.MX_SETTINGS.SETUP.SetCameraMaxZoomDistance = false -- prevent T2 kick
 end
 
-function module.Init(category, connections)
+function module.Init()
 	local plr = game.Players.LocalPlayer
 	
 	local status = plr:WaitForChild("Status")

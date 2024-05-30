@@ -9,7 +9,7 @@ end
 local BRIDGE, BRIDGE_IN, BRIDGE_OUT
 
 local objects = {}
-function module.Init(category, connections)
+function module.Init()
 	local plr = game.Players.LocalPlayer
 	local Backpack = plr:WaitForChild("Backpack")
 	local PlayerScripts = plr:WaitForChild("PlayerScripts")

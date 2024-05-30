@@ -1,4 +1,4 @@
-_G.MX_VERSION = "0.6.2e"
+_G.MX_VERSION = "0.6.2f"
 _G.MX_ENV = "DEV"
 
 local REPOSITORY = {
@@ -18,6 +18,7 @@ local REPOSITORY = {
 	[8200787440] = "EatBlobsSimulator.lua",
 	[15027718878] = "TheSpaceSimulator.lua",
 	[6888253864] = "WackyWizards.lua",
+	[13541967921] = "UltimateFactoryTycoon.lua",
 	
 	[2474168535] = "Westbound.lua",
 	
@@ -30,6 +31,7 @@ local REPOSITORY = {
 	[301549746] = "CounterBlox.lua",
 	
 	[16392065676] = "Minecraft.lua", -- Craft-blox
+	[15841295873] = "Minecraft.lua", -- Craft-blox 2
 }
 -- _G.SetClipboard(game.PlaceId)
 
@@ -137,12 +139,15 @@ function _G.MX_SetupFunctionLocals(func)
 	if not func or not type(func) == "function" then return end
 	
 	local env = getfenv(func)
-	env.plr = plr
-	env.Players = Players
-	env.Workspace = Workspace
-	env.UserInputService = UserInputService
+	env.Players = _G.SafeGetService("Players")
+	env.plr = env.Players.LocalPlayer
+	env.Workspace = _G.SafeGetService("Workspace")
+	env.RunService = _G.SafeGetService("RunService")
+	env.UserInputService = _G.SafeGetService("UserInputService")
 	env.ReplicatedStorage = _G.SafeGetService("ReplicatedStorage")
-	env.ContextActionService = ContextActionService
+	env.ContextActionService = _G.SafeGetService("ContextActionService")
+	
+	return env
 end
 
 local f, err = pcall(function()
@@ -507,8 +512,10 @@ if GameModule and GameModule.Init then
 	task.spawn(function()
 		local category = _G.MX_UIHandler:AddCategory(GameModule.CustomCategoryName or _G.GAMEINFO.Name)
 		GameModule.On = true
-		_G.MX_SetupFunctionLocals(GameModule.Init)
-		local f, err = pcall(GameModule.Init, category, GameModuleConnections)
+		local env = _G.MX_SetupFunctionLocals(GameModule.Init)
+		env.connections = GameModuleConnections
+		env.category = category
+		local f, err = pcall(GameModule.Init)
 		if not f then
 			logwarn("Game Module Init failed:", err)
 		end

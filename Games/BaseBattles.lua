@@ -1,7 +1,7 @@
 local module = {}
 
 local CameraScript
-function module.Init(category, connections)
+function module.Init()
 	local Workspace = _G.SafeGetService("Workspace")
 	local cam = Workspace.CurrentCamera
 	local ReplicatedStorage = _G.SafeGetService("ReplicatedStorage")

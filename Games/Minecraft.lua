@@ -4,9 +4,9 @@ function module.PreInit()
 	_G.MX_SETTINGS.SETUP.SetCameraMaxZoomDistance = false
 end
 
-function module.Init(category, connections)
-	local plr = game.Players.LocalPlayer
+function module.Init()
 	local MainLocalScript = plr:WaitForChild("PlayerScripts"):WaitForChild("MainLocalScript")
+	local CWorld = MainLocalScript:WaitForChild("CWorld")
 	
 	local Constants = {
 		PlayerReachBlocks = 5.5,
@@ -14,10 +14,7 @@ function module.Init(category, connections)
 	}
 	Constants.PlayerReach = Constants.PlayerReachBlocks * Constants.BlockSize - 1
 	
-	local RunService = _G.SafeGetService("RunService")
-	local UserInputService = _G.SafeGetService("UserInputService")
 	local HttpService = _G.SafeGetService("HttpService")
-	local ReplicatedStorage = _G.SafeGetService("ReplicatedStorage")
 	local GameRemotes = ReplicatedStorage:WaitForChild("GameRemotes")
 	local AssetsMod = ReplicatedStorage:WaitForChild("AssetsMod")
 	
@@ -403,6 +400,49 @@ function module.Init(category, connections)
 		end
 	end)
 	category:EndInline()
+	
+	local function PtoT(x,y,z)
+		if type(x) == "vector" then
+			x,y,z = x.X,x.Y,x.Z
+		end
+		return math.floor(x / Constants.BlockSize + .5),
+			math.floor(y / Constants.BlockSize + .5),
+			math.floor(z / Constants.BlockSize + .5)
+	end
+	
+	local function FindBlocks(blockName)
+		local blocks = {}
+		for _, region in pairs(Blocks:GetChildren()) do
+			for _, block in pairs(region:GetChildren()) do
+				if block.Name == blockName then
+					table.insert(blocks, block)
+				end
+			end
+		end
+		return blocks
+	end
+	
+	category:AddButton("Destroy nearest chest", function()
+		local chests = FindBlocks("Chest")
+		if #chests > 0 then
+			local nearest, nearestDist, dist
+			for _,chest in pairs(chests) do
+				dist = plr:DistanceFromCharacter(chest.Position)
+				if dist < Constants.PlayerReach and (not nearest or dist < nearestDist) then
+					nearest = chest
+					nearestDist = dist
+				end
+			end
+			if nearest then
+				local blockPos = PtoT(block.Position)
+				Remotes.BreakBlock:FireServer(blockPos.X, blockPos.Y, blockPos.Z)
+				task.wait(0.7)
+				if Remotes.AcceptBreakBlock:InvokeServer() then
+					_G.LocalModuleInvoke(CWorld, blockPos.X, blockPos.Y, blockPos.Z)
+				end
+			end
+		end
+	end)
 	
 	--[[
 	local healthBillboard = itemsXRayBillboard:Clone()

@@ -2,7 +2,7 @@ local module = {}
 
 --function module.PreInit() end
 
-function module.Init(category, connections)
+function module.Init()
 	local plr = game.Players.LocalPlayer
 	
 	local orbsFolder = game.Workspace:WaitForChild("Orbs")

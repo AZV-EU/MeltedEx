@@ -4,7 +4,7 @@ function module.PreInit()
 	_G.MX_SETTINGS.ESP.Mode = 1
 end
 
-function module.Init(category, connections)
+function module.Init()
 	local plr = game.Players.LocalPlayer
 	
 	--_G.MX_ESPSystem.Teams["Allies"].Hidden = true -- let in-game ESP work
