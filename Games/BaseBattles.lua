@@ -10,9 +10,19 @@ function module.Init(category, connections)
 	local PlayerScripts = plr:WaitForChild("PlayerScripts")
 	
 	do -- gun mods
-		_G.LoadLocalCode([[local data
-local custom = {}
-for _,config in pairs(game:GetService("ReplicatedStorage"):WaitForChild("Weapons"):WaitForChild("Guns"):GetDescendants()) do
+		_G.LoadLocalCode([[local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local HUD = require(ReplicatedStorage:WaitForChild("Libraries"):WaitForChild("HUD"))
+HUD.GetAccuracy = function() return 1 end
+
+local custom = {
+	["Homing Launcher"] = function(data)
+		data.lockRadius = 10000
+	end
+}
+
+local data
+for _,config in pairs(ReplicatedStorage:WaitForChild("Weapons"):WaitForChild("Guns"):GetDescendants()) do
 	if config:IsA("ModuleScript") and config.Name == "Configuration" then
 		data = require(config)
 		if data.bloom then
@@ -21,8 +31,11 @@ for _,config in pairs(game:GetService("ReplicatedStorage"):WaitForChild("Weapons
 		end
 		data.bloomFactor = 0
 		data.automatic = true
-		data.maxAmmo = 500
-		data.MaxAmmo = 500
+		data.maxAmmo = 1000
+		--if data.projectileVelocity then
+			--data.projectileVelocity = math.max(data.projectileVelocity, 500)
+		--end
+		--data.MaxAmmo = 500
 		--data.firerate = 10
 		data.noYawRecoil = "true"
 		data.recoilCoefficient = 1

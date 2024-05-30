@@ -5,7 +5,6 @@ local module = {}
 end]]
 
 function module.Init(category, connections)
-	local plr = game.Players.LocalPlayer
 	
 end
 

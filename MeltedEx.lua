@@ -1,7 +1,8 @@
-_G.MX_VERSION = "0.6.2d"
+_G.MX_VERSION = "0.6.2e"
 _G.MX_ENV = "PROD"
 
 local REPOSITORY = {
+	[920587237] = "AdoptMe.lua",
 	[286090429] = "Arsenal.lua",
 	[893973440] = "FleeTheFacility.lua",
 	[4448566543] = "BananaEats.lua",
@@ -132,7 +133,17 @@ repeat
 	plr = Players.LocalPlayer
 until plr and plr:FindFirstChild("PlayerScripts")
 
---_G.SetCapabilities(plr, "Kick", 1337)
+function _G.MX_SetupFunctionLocals(func)
+	if not func or not type(func) == "function" then return end
+	
+	local env = getfenv(func)
+	env.plr = plr
+	env.Players = Players
+	env.Workspace = Workspace
+	env.UserInputService = UserInputService
+	env.ReplicatedStorage = _G.SafeGetService("ReplicatedStorage")
+	env.ContextActionService = ContextActionService
+end
 
 local f, err = pcall(function()
 	log("Loading ESP System")
@@ -496,6 +507,7 @@ if GameModule and GameModule.Init then
 	task.spawn(function()
 		local category = _G.MX_UIHandler:AddCategory(GameModule.CustomCategoryName or _G.GAMEINFO.Name)
 		GameModule.On = true
+		_G.MX_SetupFunctionLocals(GameModule.Init)
 		local f, err = pcall(GameModule.Init, category, GameModuleConnections)
 		if not f then
 			logwarn("Game Module Init failed:", err)

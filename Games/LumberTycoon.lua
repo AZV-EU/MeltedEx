@@ -12,24 +12,29 @@ function module.Init(category, connections)
 	local Interaction = ReplicatedStorage:WaitForChild("Interaction")
 	
 	local Remotes = {
-		ClientIsDragging = Interaction:WaitForChild("ClientIsDragging")
+		ClientIsDragging = Interaction:WaitForChild("ClientIsDragging"),
+		RemoteProxy = Interaction:WaitForChild("RemoteProxy")
 	}
 	
 	local Properties = Workspace:WaitForChild("Properties")
 	local LogModels = Workspace:WaitForChild("LogModels")
 	local PlayerModels = Workspace:WaitForChild("PlayerModels")
 	local Stores = Workspace:WaitForChild("Stores")
-	local SellFurnace = Stores:WaitForChild("WoodRUs"):WaitForChild("Furnace")
 	local Lava = Workspace:WaitForChild("Region_Volcano"):WaitForChild("Lava"):WaitForChild("Lava")
+	local SellCFrame = CFrame.new(315, 0, 85)
 	
 	-- putting into _G as to not memory leak per reset
 	if not _G.AxeClasses then
+		local LOCAL_BRIDGE, BRIDGE_IN = _G.LocalBridge([[script:WaitForChild("DATA_IN").OnInvoke = function(axeClass)
+	return require(axeClass).new()
+end]], "LT2_BRIDGE")
 		_G.AxeClasses = {}
 		for _,axeClass in pairs(ReplicatedStorage:WaitForChild("AxeClasses"):GetChildren()) do
 			if axeClass:IsA("ModuleScript") and axeClass.Name:sub(1,9) == "AxeClass_" then
-				_G.AxeClasses[axeClass.Name:sub(10)] = require(axeClass).new()
+				_G.AxeClasses[axeClass.Name:sub(10)] = BRIDGE_IN:Invoke(axeClass)
 			end
 		end
+		LOCAL_BRIDGE:Destroy()
 	end
 	
 	local function GetMyPlot()
@@ -122,17 +127,20 @@ function module.Init(category, connections)
 	
 	local function CalculateAxeDamage(axeName, treeClass)
 		axeName = axeName or ""
-		local dps, axeClass = 0, _G.AxeClasses[axeName]
+		local axeClass = _G.AxeClasses[axeName]
+		local damage, cooldown = 0, 1
 		if axeClass then
-			dps = axeClass.Damage * (1 / axeClass.SwingCooldown)
+			damage = axeClass.Damage
+			cooldown = axeClass.SwingCooldown
 			if treeClass and axeClass.SpecialTrees and axeClass.SpecialTrees[treeClass] then
-				dps = axeClass.SpecialTrees[treeClass].Damage * (1 / axeClass.SpecialTrees[treeClass].SwingCooldown)
+				damage = axeClass.SpecialTrees[treeClass].Damage
+				cooldown = axeClass.SpecialTrees[treeClass].SwingCooldown
 			end
 		end
-		return dps
+		return damage * (1 / cooldown), damage, cooldown
 	end
 	
-	local function BestAxe(tree)
+	local function GetBestAxe(tree)
 		if not plr.Character or not plr.Character.Parent then return end
 		local axes = {}
 		for _,tool in pairs(plr.Backpack:GetChildren()) do
@@ -147,27 +155,46 @@ function module.Init(category, connections)
 		end
 		
 		if #axes > 0 then
+			local best = axes[1]
+			local bestDPS, bestDamage, bestCooldown = CalculateAxeDamage(best.ToolName.Value)
 			if tree and tree:FindFirstChild("TreeClass") then
-				local best, bestDPS, dps
+				best = nil
+				bestDPS = 0
+				local dps, damage, cooldown
 				for _,axe in pairs(axes) do
-					dps = CalculateAxeDamage(axe.ToolName.Value, tree.TreeClass.Value)
+					dps, damage, cooldown = CalculateAxeDamage(axe.ToolName.Value, tree.TreeClass.Value)
 					if not best or dps > bestDPS then
 						best = axe
 						bestDPS = dps
+						bestDamage = damage
+						bestCooldown = cooldown
 					end
 				end
-				if best then
-					return best
-				end
 			end
-			return axes[1]
+			return best, bestDamage, bestCooldown
 		end
 	end
 	
-	local function CutTree(tree, sectionId, height)
-		secdtionId = sectionId or 1
-		height = height or 0.5
+	local function HitTree(tree, sectionId, height)
+		if not tree then warn("no tree to hit") return end
+		local cutEvent = tree:FindFirstChild("CutEvent")
+		if not cutEvent then warn("no cutevent") return end
+		local axe, axeDamage, axeCooldown = GetBestAxe(tree)
+		if not axe or axeDamage <= 0 then warn("no best axe") return end
 		
+		sectionId = sectionId or 1
+		Remotes.RemoteProxy:FireServer(cutEvent,
+			{
+				height = height or 0.5,
+				sectionId = sectionId or 1,
+				faceVector = Vector3.xAxis,
+				hitPoints = axeDamage,
+				cooldown = axeCooldown,
+				tool = axe,
+				cuttingClass = "Axe"
+			}
+		)
+		return true, axeCooldown
 	end
 	
 	category:AddButton("Teleport Home", function()
@@ -176,8 +203,6 @@ function module.Init(category, connections)
 			_G.TeleportPlayerTo(CFrame.new(plotPos + Vector3.new(0, 5, 0)))
 		end
 	end)
-	
-	local SellPos = SellFurnace:FindFirstChild("Big",true).Parent.Position + Vector3.new(0, 10, 0)
 	
 	do category:BeginInline()
 		local carryNearest
@@ -230,7 +255,7 @@ function module.Init(category, connections)
 			if tree and root then
 				Remotes.ClientIsDragging:FireServer(tree)
 				task.wait(.1)
-				root.CFrame = CFrame.new(SellPos)
+				root.CFrame = SellCFrame
 				for _,part in pairs(tree:GetChildren()) do
 					if part:IsA("BasePart") then
 						part.AssemblyLinearVelocity = Vector3.zero
@@ -240,101 +265,123 @@ function module.Init(category, connections)
 			end
 		end)
 		
-		table.insert(connections, Lava.Touched:Connect(function(part)
-		end))
+		table.insert(connections, Lava.Touched:Connect(function(part) end))
 		
-		local BoundsB = SellFurnace:WaitForChild("BoundsB")
-		category:AddButton("Mod Nearest", function()
-			local tree, root = GetNearestTree()
-			if tree and root and plr.Character and plr.Character.PrimaryPart then
-				local highest, highestID
-				for _,section in pairs(tree:GetChildren()) do
-					if section.Name == "WoodSection" and section:FindFirstChild("ID") then
-						if not highest or section.ID.Value > highestID then
-							highest = section
-							highestID = section.ID.Value
-						end
-					end
-				end
-				if highest and highest ~= root and highestID > 2 then
-					local parentID = highest.ParentID.Value
-					if parentID ~= root.ID.Value then
-						local parent
-						for _,section in pairs(tree:GetChildren()) do
-							if section.Name == "WoodSection" and section:FindFirstChild("ID") and section.ID.Value == parentID then
-								parent = section
-								break
+		local treeModding = false
+		local modTree
+		modTree = category:AddButton("Mod Nearest", function()
+			if treeModding then
+				treeModding = false
+				modTree:SetText("Mod Nearest")
+			else
+				local tree, root = GetNearestTree()
+				if tree and root and plr.Character and plr.Character.PrimaryPart then
+					local highest, highestID
+					for _,section in pairs(tree:GetChildren()) do
+						if section.Name == "WoodSection" and section:FindFirstChild("ID") then
+							if not highest or section.ID.Value > highestID then
+								highest = section
+								highestID = section.ID.Value
 							end
 						end
-						if parent then
-							local pOrigin, tOrigin = plr.Character.PrimaryPart.CFrame, root.CFrame
-							
-							print("unwelding")
-							_G.TeleportPlayerTo(root.Position + Vector3.new(0, 0, 3))
-							task.wait(.1)
-							Remotes.ClientIsDragging:FireServer(tree)
-							task.wait(.1)
-							_G.TeleportPlayerTo(CFrame.new(-1425, 435, 1244))
-							root.CFrame = CFrame.new(-1425, 435 + root.Size.Y/2, 1247)
-							root.AssemblyLinearVelocity = Vector3.zero
-							root.AssemblyAngularVelocity = Vector3.zero
-							task.wait()
-							for _,weld in pairs(tree:GetDescendants()) do
-								if weld:IsA("Weld") and (weld.Part0 == parent or weld.Part1 == parent) then
-									weld:Destroy()
+					end
+					if highest and highest ~= root and highestID > 2 then
+						local parentID = highest.ParentID.Value
+						if parentID ~= root.ID.Value then
+							local parent
+							for _,section in pairs(tree:GetChildren()) do
+								if section.Name == "WoodSection" and section:FindFirstChild("ID") and section.ID.Value == parentID then
+									parent = section
+									break
 								end
 							end
-							if not module.On then return end
-							
-							print("putting on fire")
-							repeat
+							if parent then
+								treeModding = true
+								modTree:SetText("Cancel Mod")
+								local pOrigin, tOrigin = plr.Character.PrimaryPart.CFrame, root.CFrame
+								
 								_G.TeleportPlayerTo(root.Position + Vector3.new(0, 0, 3))
-								task.wait()
-								Remotes.ClientIsDragging:FireServer(tree)
-								task.wait()
-								root.CFrame = CFrame.new(Lava.Position + Vector3.new(0, Lava.Size.Y/2 + root.Size.Y/4, 0))
-								root.AssemblyLinearVelocity = Vector3.zero
-								root.AssemblyAngularVelocity = Vector3.zero
-								--parent.Position = Lava.Position
-								task.wait()
-								root.CFrame = CFrame.new(-1425, 440 + root.Size.Y/2, 1247)
-								root.AssemblyLinearVelocity = Vector3.zero
-								root.AssemblyAngularVelocity = Vector3.zero
-							until root:FindFirstChild("LavaFire") or not module.On
-							root:FindFirstChild("LavaFire"):Destroy()
-							if not module.On then return end
-							
-							print("selling parent")
-							repeat
-								_G.TeleportPlayerTo(root.Position + Vector3.new(0, 0, 3))
-								task.wait()
-								Remotes.ClientIsDragging:FireServer(tree)
-								task.wait()
-								root.CFrame = CFrame.new(-1055, 291, -458)
-								_G.TeleportPlayerTo(CFrame.new(-1055, 291, -458))
-								task.wait()
-								parent.CFrame = CFrame.new(SellPos)
 								task.wait(.1)
-								root.CFrame = CFrame.new(-1055, 291, -458)
-							until not parent or not parent.Parent or not module.On
-							if not module.On then return end
-							
-							print("going back")
-							_G.TeleportPlayerTo(root.Position + Vector3.new(0, 0, 3))
-							task.wait(.1)
-							Remotes.ClientIsDragging:FireServer(tree)
-							task.wait(.1)
-							root.CFrame = tOrigin
-							highest.CFrame = CFrame.new(pOrigin.Position + Vector3.new(0, 5, 0))
-							_G.TeleportPlayerTo(pOrigin)
+								Remotes.ClientIsDragging:FireServer(tree)
+								task.wait(.1)
+								_G.TeleportPlayerTo(CFrame.new(-1425, 435, 1244))
+								root.CFrame = CFrame.new(-1425, 435 + root.Size.Y/2, 1247)
+								root.AssemblyLinearVelocity = Vector3.zero
+								root.AssemblyAngularVelocity = Vector3.zero
+								task.wait()
+								for _,weld in pairs(parent:GetChildren()) do
+									if weld:IsA("Weld") then
+										weld:Destroy()
+									end
+								end
+								if not treeModding or not module.On then return end
+								
+								print("putting on fire")
+								repeat
+									Remotes.ClientIsDragging:FireServer(tree)
+									task.wait()
+									root.CFrame = CFrame.new(-1425, 440 + root.Size.Y/2, 1247)
+									_G.TeleportPlayerTo(CFrame.new(-1425, 435, 1244))
+									root.AssemblyLinearVelocity = Vector3.zero
+									root.AssemblyAngularVelocity = Vector3.zero
+									task.wait()
+									root.CFrame = CFrame.new(Lava.Position + Vector3.new(0, Lava.Size.Y/2 + root.Size.Y/2 + 5, 0))
+									root.AssemblyLinearVelocity = Vector3.zero
+									root.AssemblyAngularVelocity = Vector3.zero
+									parent.Position = Lava.Position + Vector3.new(0, Lava.Size.Y/2, 0)
+									task.wait()
+									root.CFrame = CFrame.new(-1425, 440 + root.Size.Y/2, 1247)
+								until parent:FindFirstChild("LavaFire") or not treeModding or not module.On
+								if not treeModding or not module.On then return end
+								
+								print("selling parent")
+								repeat
+									_G.TeleportPlayerTo(root.Position + Vector3.new(0, 0, 3))
+									task.wait()
+									Remotes.ClientIsDragging:FireServer(tree)
+									task.wait()
+									root.CFrame = CFrame.new(-1055, 291, -458)
+									_G.TeleportPlayerTo(CFrame.new(-1055, 291, -458))
+									root.AssemblyLinearVelocity = Vector3.zero
+									root.AssemblyAngularVelocity = Vector3.zero
+									parent.CFrame = SellCFrame
+									task.wait(.1)
+								until not parent or not parent.Parent or not treeModding or not module.On
+								if not treeModding or not module.On then return end
+								
+								print("going back")
+								_G.TeleportPlayerTo(root.Position + Vector3.new(0, 0, 3))
+								task.wait(.1)
+								Remotes.ClientIsDragging:FireServer(tree)
+								task.wait(.1)
+								root.CFrame = tOrigin
+								_G.TeleportPlayerTo(pOrigin)
+								highest.CFrame = CFrame.new(pOrigin.Position + Vector3.new(0, 5, 0))
+								
+								local rootMass = math.floor(root.AssemblyMass)
+								if not HitTree(tree, root.ID.Value) then
+									print("Could not cutoff tree trunk")
+									return
+								end
+								
+								local success, cooldown
+								repeat
+									_G.TeleportPlayerTo(root.Position + Vector3.new(0, 0, 3))
+									task.wait()
+									Remotes.ClientIsDragging:FireServer(tree)
+									task.wait()
+									success, cooldown = HitTree(tree, root.ID.Value)
+									task.wait(.1)
+								until math.floor(root.AssemblyMass) < rootMass or not success or not treeModding or not module.On
+							else
+								_G.Notify("Tree not high enough [3]", "Mod Wood Fail")
+							end
 						else
-							_G.Notify("Tree not high enough [3]", "Mod Wood Fail")
+							_G.Notify("Tree not high enough [2]", "Mod Wood Fail")
 						end
 					else
-						_G.Notify("Tree not high enough [2]", "Mod Wood Fail")
+						_G.Notify("Tree not high enough [1]", "Mod Wood Fail")
 					end
-				else
-					_G.Notify("Tree not high enough [1]", "Mod Wood Fail")
 				end
 			end
 		end)
@@ -346,7 +393,8 @@ function module.Init(category, connections)
 		local regions = {
 			["Maze Cave"] = Workspace:WaitForChild("Region_MazeCave"):FindFirstChild("ParticleEmitter",true).Parent.Position + Vector3.new(0,3,0),
 			["Volcano"] = Vector3.new(-1614, 625, 1137),
-			["Frost"] = Vector3.new(1452, 417, 3195)
+			["Frost"] = Vector3.new(1452, 417, 3195),
+			["Beach"] = Vector3.new(2620, -4.5, -10)
 		}
 		
 		local inline = false
