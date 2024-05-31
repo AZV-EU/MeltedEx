@@ -310,6 +310,8 @@ do
 		if state.Updating then return end
 		state.Updating = true
 		
+		local human = target:FindFirstChildWhichIsA("Humanoid")
+		
 		local player = in_player or Players:GetPlayerFromCharacter(target)
 		if _G.MX_SETTINGS.ESP.HighlightsEnabled then
 			if _G.MX_SETTINGS.ESP.Mode == 0 and target.Parent ~= team.Folder then
@@ -343,11 +345,19 @@ do
 				state.Billboard.TextLabel.Position = UDim2.new(0.5, -state.Billboard.TextLabel.Size.X.Offset/2, 0, 0)
 				state.Billboard.HealthLabel.Text = player and player.DisplayName or target.Name
 				state.Billboard.HealthLabel.TextColor3 = team.Color
+				if human then
+					if human.MaxHealth < math.huge then
+						state.Billboard.HealthLabel.Size = UDim2.new(0, state.Billboard.TextLabel.Size.X.Offset * math.min(1, human.Health / human.MaxHealth), 1, 0)
+					else
+						state.Billboard.HealthLabel.Size = state.Billboard.TextLabel.Size
+					end
+				end
 				state.Billboard.HealthLabel.Position = state.Billboard.TextLabel.Position
 				state.Billboard.Adornee = target:FindFirstChild("HumanoidRootPart") or target
 				state.Billboard.Enabled = state.Billboard.Adornee ~= nil
 			end, function(err) print("[MX::ESPSystem] UpdateTarget error:", err) end)
 		end
+		
 		state.Updating = false
 	end
 end

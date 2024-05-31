@@ -32,11 +32,7 @@ for _,config in pairs(ReplicatedStorage:WaitForChild("Weapons"):WaitForChild("Gu
 		data.bloomFactor = 0
 		data.automatic = true
 		data.maxAmmo = 1000
-		--if data.projectileVelocity then
-			--data.projectileVelocity = math.max(data.projectileVelocity, 500)
-		--end
-		--data.MaxAmmo = 500
-		--data.firerate = 10
+		data.sniperScope = false
 		data.noYawRecoil = "true"
 		data.recoilCoefficient = 1
 		if custom[config.Parent.Name] then
@@ -91,13 +87,34 @@ end]], "GunMods")
 	local hitboxSizeDefault = Vector3.new(2, 2, 1)
 	
 	local vehicleWhitelist = {
-		["Biplane"] = true,
+		--[[["Biplane"] = true,
 		["Dirtbike"] = true,
 		["Light Bike"] = true,
 		["Go-Kopter"] = true,
 		["Airboat"] = true,
-		["Dune Buggy"] = true
+		["Dune Buggy"] = true]]
 	}
+	
+	do
+		local seatConfig
+		for _,config in pairs(ReplicatedStorage:WaitForChild("Vehicles"):GetDescendants()) do
+			if config:IsA("ModuleScript") and config.Name == "SeatConfiguration" then
+				seatConfig = _G.LocalModuleGet(config)
+				local hasInterior = false
+				for _,data in pairs(seatConfig) do
+					if data.interior then
+						hasInterior = true
+						break
+					end
+				end
+				if not hasInterior then
+					vehicleWhitelist[config.Parent.Name] = true
+				end
+			end
+		end
+	end
+	
+	print(_G.Discover(vehicleWhitelist))
 	
 	task.spawn(function()
 		while task.wait(1) and module.On do
