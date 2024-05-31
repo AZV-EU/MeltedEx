@@ -11,7 +11,7 @@ function module.Init()
 	
 	local function UpdateUI()
 		local ScrollingFrame = PlayerGui:WaitForChild("General"):WaitForChild("Vehicles"):WaitForChild("Content"):WaitForChild("ScrollingFrame")
-		ScrollingFrame.CanvasSize = UDim2.new(20, 0, 0, 0)
+		ScrollingFrame.CanvasSize = UDim2.new(10, 0, 0, 0)
 		
 		local adminGui = ReplicatedStorage:WaitForChild("AdminPanel"):Clone()
 		adminGui.Parent = PlayerGui
