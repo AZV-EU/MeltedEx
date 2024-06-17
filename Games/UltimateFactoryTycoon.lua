@@ -12,11 +12,14 @@ function module.Init()
 	local function UpdateUI()
 		local ScrollingFrame = PlayerGui:WaitForChild("General"):WaitForChild("Vehicles"):WaitForChild("Content"):WaitForChild("ScrollingFrame")
 		ScrollingFrame.CanvasSize = UDim2.new(10, 0, 0, 0)
+		ScrollingFrame.AutomaticCanvasSize = Enum.AutomaticSize.X
 		
-		local adminGui = ReplicatedStorage:WaitForChild("AdminPanel"):Clone()
-		adminGui.Parent = PlayerGui
-		adminGui.Enabled = true
-		adminGui:FindFirstChildWhichIsA("LocalScript").Enabled = true
+		if not PlayerGui:FindFirstChild("AdminPanel") then
+			local adminGui = ReplicatedStorage:WaitForChild("AdminPanel"):Clone()
+			adminGui.Parent = PlayerGui
+			adminGui.Enabled = true
+			adminGui:FindFirstChildWhichIsA("LocalScript").Enabled = true
+		end
 	end
 	UpdateUI()
 	table.insert(connections, plr.CharacterAdded:Connect(UpdateUI))
@@ -102,7 +105,6 @@ function module.Init()
 		
 		local count = #vehicles
 		if count > 0 then
-			buyAllVehicles:SetText("Buying...")
 			for i = 1, count do
 				buyAllVehicles:SetText(string.format("Buying vehicle %d out of %d...", i, count))
 				VehicleFunction:InvokeServer("RequestPurchase",
@@ -118,14 +120,23 @@ function module.Init()
 		buyAllVehicles:SetEnabled(true)
 	end)
 	
+	local giveChest
 	do category:BeginInline()
-		category:AddButton("Get EM-Chest", function()
+		category:AddButton("Get Chest", function()
 			RewardFunction:InvokeServer({"Daily", "ClaimReward"}, {plr, "Chest", "Epic Mecha"})
 		end)
 		
-		category:AddButton("Open EM-Chest", function()
+		category:AddButton("Open Chest", function()
 			ChestFunction:InvokeServer("OpenChest", {plr, "Epic Mecha"})
 		end)
+		
+		giveChest = category:AddButton("Give Chest", function()
+			if _G.MX_SelectedPlayer then
+				RewardFunction:InvokeServer({"Daily", "ClaimReward"}, {_G.MX_SelectedPlayer, "Chest", "Epic Mecha"})
+				ChestFunction:InvokeServer("OpenChest", {_G.MX_SelectedPlayer, "Epic Mecha"})
+			end
+		end)
+		giveChest:SetEnabled(false)
 	end category:EndInline()
 	
 	local buyingButtons = false
@@ -140,7 +151,7 @@ function module.Init()
 					local toBuy = {}
 					local budget = plr.leaderstats.Cash.Value
 					for _,button in pairs(buttons:GetChildren()) do
-						if button:FindFirstChild("Head") and button.Head.Transparency == 0 and button:FindFirstChild("Price") and budget - button.Price.Value >= 0 then
+						if button:FindFirstChild("Head") and button.Head.Transparency < 1 and button:FindFirstChild("Price") and budget - button.Price.Value >= 0 then
 							budget -= button.Price.Value
 							table.insert(toBuy, button.Head)
 						end
@@ -160,6 +171,48 @@ function module.Init()
 		end
 		buyingButtons = false
 	end)
+	
+	local giveAllVehicles
+	giveAllVehicles = category:AddButton("Give All Vehicles", function()
+		if _G.MX_SelectedPlayer then
+			giveAllVehicles:SetEnabled(false)
+			local vehicles = {}
+			
+			local settings
+			for _,vehicle in pairs(Vehicles:WaitForChild("Objects"):GetChildren()) do
+				settings = vehicle:FindFirstChild("Settings")
+				if settings then
+					settings = _G.LocalModuleGet(settings)
+					if settings.Price == 0 then
+						table.insert(vehicles, {vehicle, settings})
+					end
+				end
+			end
+			
+			local count = #vehicles
+			if count > 0 then
+				for i = 1, count do
+					print("Giving vehicle", vehicles[i][1].Name)
+					giveAllVehicles:SetText(string.format("Giving vehicle %d out of %d...", i, count))
+					VehicleFunction:InvokeServer("RequestPurchase",
+						{
+							_G.MX_SelectedPlayer,
+							vehicles[i][1],
+							vehicles[i][2]
+						}
+					)
+				end
+				giveAllVehicles:SetText("Give All Vehicles")
+			end
+			giveAllVehicles:SetEnabled(true)
+		end
+	end)
+	giveAllVehicles:SetEnabled(false)
+	
+	table.insert(connections, _G.MX_SelectedPlayerChanged:Connect(function(previous)
+		giveChest:SetEnabled(_G.MX_SelectedPlayer ~= nil)
+		giveAllVehicles:SetEnabled(_G.MX_SelectedPlayer ~= nil)
+	end))
 end
 
 return module

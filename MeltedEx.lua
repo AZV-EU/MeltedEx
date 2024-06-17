@@ -1,4 +1,4 @@
-_G.MX_VERSION = "0.6.2i"
+_G.MX_VERSION = "0.6.2j"
 _G.MX_ENV = "PROD"
 
 local REPOSITORY = {
@@ -329,7 +329,9 @@ end
 do -- fun category ;)
 	local category = _G.MX_UIHandler:AddCategory("Players")
 	
-	local SelectedPlayer
+	_G.MX_SelectedPlayer = nil
+	local SelectedPlayerChangedBind = Instance.new("BindableEvent")
+	_G.MX_SelectedPlayerChanged = SelectedPlayerChangedBind.Event
 	local selectPlayerBtn
 	local playersOptions = {}
 	
@@ -341,26 +343,30 @@ do -- fun category ;)
 			pcall(conn.Disconnect, conn)
 		end
 		updateConnections = {}
+		local previous = _G.MX_SelectedPlayer
 		if not index then
-			SelectedPlayer = nil
+			_G.MX_SelectedPlayer = nil
 			selectPlayerBtn:SetText("Select Player")
 			selectPlayerBtn:SetColor(_G.COLORS.WHITE)
 		else
-			SelectedPlayer = playersOptions[index].Player
-			selectPlayerBtn:SetText(SelectedPlayer.DisplayName)
+			_G.MX_SelectedPlayer = playersOptions[index].Player
+			selectPlayerBtn:SetText(_G.MX_SelectedPlayer.DisplayName)
 			local function UpdateColor()
-				if SelectedPlayer.Character then
-					local team = _G.MX_ESPSystem.GetTeam(SelectedPlayer.Character)
+				if _G.MX_SelectedPlayer.Character then
+					local team = _G.MX_ESPSystem.GetTeam(_G.MX_SelectedPlayer.Character)
 					if team then
 						selectPlayerBtn:SetColor(team.Color)
 					end
 				end
 			end
 			UpdateColor()
-			local respawnConn = SelectedPlayer.CharacterAdded:Connect(UpdateColor)
+			local respawnConn = _G.MX_SelectedPlayer.CharacterAdded:Connect(UpdateColor)
 			table.insert(MXConnections, respawnConn); table.insert(updateConnections, respawnConn)
-			local teamChangeConn = SelectedPlayer:GetPropertyChangedSignal("Team"):Connect(UpdateColor)
+			local teamChangeConn = _G.MX_SelectedPlayer:GetPropertyChangedSignal("Team"):Connect(UpdateColor)
 			table.insert(MXConnections, teamChangeConn); table.insert(updateConnections, teamChangeConn)
+		end
+		if _G.MX_SelectedPlayer ~= previous then
+			SelectedPlayerChangedBind:Fire(previous)
 		end
 	end
 	
@@ -403,7 +409,7 @@ do -- fun category ;)
 			repeat task.wait(.33) until not player or not player.Parent or not MX_RUNNING
 			UpdatePlayersOptions()
 			_G.MX_UIHandler.CurrentModal:Update(playersOptions)
-		elseif player == SelectedPlayer then
+		elseif player == _G.MX_SelectedPlayer then
 			PlayerSelected()
 		end
 	end))
@@ -420,9 +426,9 @@ do -- fun category ;)
 	local spectateCheckbox
 	spectateCheckbox = category:AddCheckbox("Spectate", function(state)
 		if state then
-			while task.wait() and spectateCheckbox.Checked and SelectedPlayer and MX_RUNNING do
-				if SelectedPlayer.Character then
-					local human = SelectedPlayer.Character:FindFirstChildWhichIsA("Humanoid")
+			while task.wait() and spectateCheckbox.Checked and _G.MX_SelectedPlayer and MX_RUNNING do
+				if _G.MX_SelectedPlayer.Character then
+					local human = _G.MX_SelectedPlayer.Character:FindFirstChildWhichIsA("Humanoid")
 					if human then
 						Workspace.CurrentCamera.CameraSubject = human
 						continue
@@ -441,9 +447,9 @@ do -- fun category ;)
 		if state then
 			local myRoot, targetRoot
 			while task.wait() and stalkerCheckbox.Checked and MX_RUNNING do
-				if plr.Character and SelectedPlayer and SelectedPlayer.Character then
+				if plr.Character and _G.MX_SelectedPlayer and _G.MX_SelectedPlayer.Character then
 					myRoot = plr.Character:FindFirstChild("HumanoidRootPart")
-					targetRoot = SelectedPlayer.Character:FindFirstChild("HumanoidRootPart")
+					targetRoot = _G.MX_SelectedPlayer.Character:FindFirstChild("HumanoidRootPart")
 					if myRoot and targetRoot then
 						myRoot.CFrame = targetRoot.CFrame * CFrame.new(0, 0, 3)
 					end
@@ -459,9 +465,9 @@ do -- fun category ;)
 		if state then
 			local targetPart, targetMotor, targetTorso, tool, toolHandle
 			while task.wait() and toolKill.Checked and MX_RUNNING do
-				if plr.Character and SelectedPlayer and SelectedPlayer.Character then
-					targetTorso = SelectedPlayer.Character:FindFirstChild("Torso")
-					targetPart = targetTorso and SelectedPlayer.Character:FindFirstChild("Left Leg") or SelectedPlayer.Character:FindFirstChild("LeftFoot")
+				if plr.Character and _G.MX_SelectedPlayer and _G.MX_SelectedPlayer.Character then
+					targetTorso = _G.MX_SelectedPlayer.Character:FindFirstChild("Torso")
+					targetPart = targetTorso and _G.MX_SelectedPlayer.Character:FindFirstChild("Left Leg") or _G.MX_SelectedPlayer.Character:FindFirstChild("LeftFoot")
 					tool = plr.Character:FindFirstChildWhichIsA("Tool")
 					if tool and targetPart then
 						targetMotor = targetTorso and targetTorso:FindFirstChild("Left Hip") or targetPart:FindFirstChild("LeftAnkle")
@@ -480,29 +486,29 @@ do -- fun category ;)
 	end)
 	
 	category:AddButton("Teleport To", function()
-		if SelectedPlayer and SelectedPlayer.Character and SelectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
-			_G.TeleportPlayerTo(SelectedPlayer.Character.HumanoidRootPart.CFrame)
+		if _G.MX_SelectedPlayer and _G.MX_SelectedPlayer.Character and _G.MX_SelectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
+			_G.TeleportPlayerTo(_G.MX_SelectedPlayer.Character.HumanoidRootPart.CFrame)
 		end
 	end)
 	category:EndInline()
 	
 	category:BeginInline()
 	category:AddButton("Freeze", function()
-		if SelectedPlayer and SelectedPlayer.Character and SelectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
-			SelectedPlayer.Character.HumanoidRootPart.Anchored = true
+		if _G.MX_SelectedPlayer and _G.MX_SelectedPlayer.Character and _G.MX_SelectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
+			_G.MX_SelectedPlayer.Character.HumanoidRootPart.Anchored = true
 		end
 	end)
 	category:AddButton("Bring", function()
-		if SelectedPlayer and SelectedPlayer.Character and SelectedPlayer.Character:FindFirstChild("HumanoidRootPart") and plr.Character then
+		if _G.MX_SelectedPlayer and _G.MX_SelectedPlayer.Character and _G.MX_SelectedPlayer.Character:FindFirstChild("HumanoidRootPart") and plr.Character then
 			local root = plr.Character:FindFirstChild("HumanoidRootPart")
 			if root then
-				SelectedPlayer.Character.HumanoidRootPart.CFrame = root.CFrame * CFrame.new(0, 0, -2)
+				_G.MX_SelectedPlayer.Character.HumanoidRootPart.CFrame = root.CFrame * CFrame.new(0, 0, -2)
 			end
 		end
 	end)
 	category:AddButton("Thaw", function()
-		if SelectedPlayer and SelectedPlayer.Character and SelectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
-			SelectedPlayer.Character.HumanoidRootPart.Anchored = false
+		if _G.MX_SelectedPlayer and _G.MX_SelectedPlayer.Character and _G.MX_SelectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
+			_G.MX_SelectedPlayer.Character.HumanoidRootPart.Anchored = false
 		end
 	end)
 	category:EndInline()
